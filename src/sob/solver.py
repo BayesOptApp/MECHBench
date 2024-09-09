@@ -1,6 +1,6 @@
 import subprocess
 
-def run_radioss(input_file_path, batch_file_path, isShell = False, write_vtk=False, write_csv = True):
+def run_radioss(input_file_path, batch_file_path, isShell = False, write_vtk=False, write_csv = True, runStarter = False):
     
     nt = "1"
     np = "1"
@@ -16,8 +16,11 @@ def run_radioss(input_file_path, batch_file_path, isShell = False, write_vtk=Fal
         csv_option = "yes"  # "yes" or "no" depending on whether you want to convert TH files to csv
     else:
         csv_option = "no"
-        
-    starter_option = "no"  # "no" or "yes" depending on whether you are running the starter
+    
+    if runStarter:
+        starter_option = "yes"  # "no" or "yes" depending on whether you are running the starter
+    else:
+        starter_option = "no"
 
     # Construct the command to run the batch file with arguments
     command = [

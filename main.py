@@ -7,7 +7,7 @@ Once the optimization problem instance has been generate, the model is determine
 '''
 
 def main():
-    linux_system = True
+    linux_system = False
     if linux_system:
         batch_file_path = "/media/feifan/TSHIBA/12_GitHub/OpenRadioss/linux_scripts_mk3/openradioss_run_script_ps.sh"
     else:
@@ -15,7 +15,7 @@ def main():
 
     a = sob.get_problem(1,3,'intrusion',batch_file_path)
     intrusion1 = a([1,2,3])
-    print(intrusion1)
+    # print(intrusion1)
     
 
 
