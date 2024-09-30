@@ -1,8 +1,20 @@
 import subprocess
+import os
 
-def run_radioss(input_file_path, batch_file_path, isShell = False, write_vtk=False, write_csv = True, runStarter = False):
+
+def run_radioss(input_file_path, 
+                batch_file_path, 
+                isShell = False, 
+                write_vtk= False, 
+                write_csv = True, 
+                runStarter = False,
+                d3plot=False):
     
-    nt = "1"
+    # TODO: This is an input line to get the number ofcores available to run
+    
+    if os.cpu_count() > 1: nt = "4"
+    else: nt="1"
+
     np = "1"
     sp = "sp"  # "sp" or any other value for non-sp
 
@@ -22,8 +34,14 @@ def run_radioss(input_file_path, batch_file_path, isShell = False, write_vtk=Fal
     else:
         starter_option = "no"
 
+    if d3plot:
+        d3_plot_option = "yes"
+    else:
+        d3_plot_option = "no"
+
     # Construct the command to run the batch file with arguments
     command = [
+        "python3", # Additional setup to call the Python3 Setup
         batch_file_path,
         input_file_path, # %1
         nt, # %2
@@ -31,7 +49,8 @@ def run_radioss(input_file_path, batch_file_path, isShell = False, write_vtk=Fal
         sp, # %4
         vtk_option, # %5
         csv_option, # %6
-        starter_option # %7
+        starter_option, # %7,
+        d3_plot_option # TODO: This is for the 3d plot option which is not considered
     ]
 
     try:
@@ -41,6 +60,6 @@ def run_radioss(input_file_path, batch_file_path, isShell = False, write_vtk=Fal
 
         # Check if there was an error
     except subprocess.CalledProcessError as e:
-        print(f"Error running batch file: {e}")
+        raise subprocess.CalledProcessError(f"Error running batch file: {e}")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        raise Exception(f"An error occurred: {e}")
