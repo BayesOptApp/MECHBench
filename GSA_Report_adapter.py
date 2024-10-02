@@ -15,7 +15,8 @@ import json
 CURRENT_DIRECTORY:str = os.getcwd()
 INPUT_DIRECTORY:str = "INPUT"
 OUTPUT_DIRECTORY:str = "OUTPUT"
-JSON_FILE_PATH:str= "problem.json"
+
+JSON_FILE_NAME:str= "problem.json"
 
 #GSA_REPORT_PATH:str= "/home/ivanolar/Documentos/GSA_Report_Git/GSAreport/src/GSAreport.py"
 GSA_REPORT_PATH:str= "/home/olarterodriguezi/GSAreport/src/GSAreport.py"
@@ -25,16 +26,15 @@ OPENRADIOSS_SETUP_FILE_LINUX:str = "/home/olarterodriguezi/OpenRadioss_linux/Ope
 
 SLURM_ENVIRONMENT = "SLURM_JOB_ID" in os.environ
 
-
-# Set the problem dimension here
+# DEFAULT_PROBLEM_DIMENSION
 PROBLEM_DIMENSION:int = 5
 
-# Number of Samples
-NUM_SAMPLES:int = 512
+# Default Number of Samples
+DEFAULT_NUM_SAMPLES:int = 512
 
 # Set the output data type for the problem
-POSSIBLE_OUTPUT_DATA:tuple = ("mass","absorbed_energy","intrusion")
-OUTPUT_DATA:str = POSSIBLE_OUTPUT_DATA[2]
+POSSIBLE_OUTPUT_DATA:tuple = ("","mass","absorbed_energy","intrusion")
+DEFAULT_OUTPUT_DATA:str = POSSIBLE_OUTPUT_DATA[3]
 
 
 def mkdir(new_dir_name:str)->None:
@@ -54,43 +54,6 @@ def mkdir(new_dir_name:str)->None:
         
         # Regenerate the directory
         os.mkdir(joined_path)
-
-def generate_samples(num_samples:int,prob_def:dict)->dict:
-
-    
-    # import the scipy libraries
-    from scipy.stats.qmc import LatinHypercube 
-    from scipy.stats.qmc import Sobol
-    from SALib.sample.morris import sample
-
-    # LHS Sampler
-    lhs_sampler = LatinHypercube(d=prob_def['num_vars'],scramble=True,
-                                optimization="lloyd")
-    
-    # Sobol Sampler
-    sobol_sampler = Sobol(d=prob_def['num_vars'],
-                          scramble=True,
-                          optimization="random-cd"
-                          )
-    
-    # Morris samples (These samples are just between the range of -5 to 5)
-    morris_samples = sample(prob_def,N=num_samples,num_levels=6)
-
-
-    # Generate the LHS Samples
-    lhs_samples = lhs_sampler.random(n=num_samples)
-
-    # Get the Sobol Samples
-    sobol_samples = sobol_sampler.random_base2(int(np.ceil(np.log2(num_samples))))
-
-    # Rescale the samples to -5 to 5
-    lhs_samples = -5 + (10*lhs_samples)
-    sobol_samples = -5 + (10*sobol_samples)
-
-    # Generate a directory with the samples
-    return {"sobol":sobol_samples,
-            "morris":morris_samples,
-            "lhs":lhs_samples}
 
 
 def generate_samples2(num_samples:int,definition:dict)->dict:
@@ -241,4 +204,81 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    import textwrap
+
+    parser = argparse.ArgumentParser(
+        prog="GSAreport_samples_adapter",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(
+            """\
+            Generate a global sensitivity analysis report for a given data set or function.
+            Common uses cases:
+            --------------------------------
+            Generate samples for evaluation by a real world function / simulator
+                > python GSAreport.py -p problem.json -d data_dir --sample --samplesize 1000
+            Analyse the samples with their output stored in the data folder
+                > python GSAreport.py -p problem.json -d data_dir -o output_dir
+            Analyse a real-world data set and use a Random Forest model to interpolate (data_dir contains x.csv and y.csv)
+                > python GSAreport.py -p problem.json -d data_dir -o output_dir --samplesize 10000
+            """
+        ),
+    )
+    parser.add_argument(
+        "--problem",
+        "-p",
+        default="problem.json",
+        type=str,
+        help="File path to the problem definition in json format.",
+    )
+    parser.add_argument(
+        "--data",
+        "-d",
+        type=str,
+        default="/data/",
+        help="Directory where the intermediate data is stored. (defaults to /data)",
+    )  # will be accesible under args.data
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default="/output/",
+        help="Directory where the output report is stored. (defaults to /output/)",
+    )  # will be accesible under args.output
+    parser.add_argument(
+        "--name",
+        type=str,
+        default="SA",
+        help="Name of the experiment, will be used in the report output.",
+    )
+    parser.add_argument(
+        "--top",
+        type=int,
+        default=10,
+        help="The number of important features to focus on, default is 10.",
+    )
+    parser.add_argument(
+        "--sample",
+        action="store_true",
+        help="When you use this flag, only the samples are generated to be used in the analyse phase.",
+    )
+    parser.add_argument(
+        "--samplesize",
+        "-n",
+        type=int,
+        help="Number of samples to generate.",
+        default=1000,
+    )
+    parser.add_argument(
+        "--modelsize", type=int, help="Number of samples for the model.", default=1000
+    )
+    parser.add_argument(
+        "--demo",
+        help="Demo mode, uses a BBOB function as test function.",
+        action="store_true",
+    )
+    args = parser.parse_args()
+
+    output_dir = args.output
+    data_dir = args.data
+    top = args.top
