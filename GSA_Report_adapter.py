@@ -12,7 +12,7 @@ import json
 #------------------ CONSTANTS FOR DIRECTORIES ----------------------
 # ------------------------------------------------------------------
 
-CURRENT_DIRECTORY:str = os.getcwd()
+CURRENT_DIRECTORY:str = os.path.dirname(__file__)
 INPUT_DIRECTORY:str = "INPUT"
 OUTPUT_DIRECTORY:str = "OUTPUT"
 
@@ -33,7 +33,7 @@ PROBLEM_DIMENSION:int = 5
 DEFAULT_NUM_SAMPLES:int = 512
 
 # Set the output data type for the problem
-POSSIBLE_OUTPUT_DATA:tuple = ("","mass","absorbed_energy","intrusion")
+POSSIBLE_OUTPUT_DATA:tuple = ("mass","absorbed_energy","intrusion","specific_energy")
 DEFAULT_OUTPUT_DATA:str = POSSIBLE_OUTPUT_DATA[3]
 
 
@@ -66,7 +66,7 @@ def generate_samples2(num_samples:int,definition:dict)->dict:
         "python3", # Additional setup to call the Python3 Setup
         GSA_REPORT_PATH, # Path to GSA Report
         "-p",
-        os.path.join(CURRENT_DIRECTORY,JSON_FILE_PATH),
+        os.path.join(CURRENT_DIRECTORY,JSON_FILE_NAME),
         "-d",
         os.path.join(CURRENT_DIRECTORY,INPUT_DIRECTORY),
         "--sample",
@@ -137,7 +137,7 @@ def generate_json(problem:(sob.problems))->None:
 
     # Generate the json file
     try:
-        fp_obj = open(os.path.join(CURRENT_DIRECTORY,JSON_FILE_PATH),mode="w+",encoding="utf8")
+        fp_obj = open(os.path.join(CURRENT_DIRECTORY,JSON_FILE_NAME),mode="w+",encoding="utf8")
     except Exception as e:
         raise("something wrong happened!",
               e.args)

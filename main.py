@@ -24,6 +24,8 @@ def main():
     a = sob.get_problem(1,3,'intrusion',batch_file_path)
     intrusion1 = a([-2,2,4.1])
     print(intrusion1)
+
+    
     
 
 

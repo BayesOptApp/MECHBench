@@ -12,7 +12,7 @@ import json
 #------------------ CONSTANTS FOR DIRECTORIES ----------------------
 # ------------------------------------------------------------------
 
-CURRENT_DIRECTORY:str = os.getcwd()
+CURRENT_DIRECTORY:str = os.path.dirname(__file__)
 INPUT_DIRECTORY:str = "INPUT"
 OUTPUT_DIRECTORY:str = "OUTPUT"
 JSON_FILE_PATH:str= "problem.json"
