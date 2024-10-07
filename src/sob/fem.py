@@ -15,7 +15,7 @@ class StarBoxModel():
             'wall_mass': 250.0,
             'wall_vel': 7.0,
         }
-        
+        self.rigid_mass = self.impactor_defaults['wall_mass']
         # Define default parameters for load_database
         self.database_defaults = {
             'end_time': 45.0,
@@ -390,6 +390,77 @@ class StarBoxModel():
         inf.write('*END')   
         inf.close()
 
+class ThreePointBendingModel():
+    def __init__(self) -> None:
+        self.rigid_mass = 0.086
+        self.rigid_vel = -5000
+    
+    def absorbed_energy(self):
+        # initial kinetic energy
+        return self.rigid_mass*self.rigid_vel**2/2
+
+    def merge_files(self, output_file, input_files):
+        # Function to merge multiple files into one
+        with open(output_file, 'w') as output:
+            for input_file in input_files:
+                with open(input_file, 'r') as input:
+                    output.write(input.read())
+
+    def write_shell_property(self, thickness_list, property_ids):
+        adr = os.path.join(os.getcwd(),'shell.rad') 
+        inf = open(adr, 'w')
+        inf.write('\n#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n')
+        inf.write('#-  6. GEOMETRICAL SETS:\n')
+        inf.write('#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n')
+        ########################################################################################
+        inf.write("/PROP/SHELL/1\n")
+        inf.write("PID_tube\n")
+        inf.write("#   Ishell    Ismstr     Ish3n    Idrill                            P_thick_fail\n")
+        inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('24','0','0', '0','', '', '', '0', '', ''))
+        inf.write("#                 hm                  hf                  hr                  dm                  dn\n")
+        inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('','0','', '0','','0','','0','','0'))
+        # inf.write("                   0                   0                   0                   0                   0\n")
+        inf.write("#        N   Istrain               Thick              Ashear              Ithick     Iplas\n")
+        inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('5','0','', '1.8','', '0', '', '1', '1',''))
+        # inf.write("         5         0                 1.8                   0                   1         1\n")
+        inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
+        ########################################################################################
+        for i in range(0, len(property_ids)):
+            inf.write('/PROP/SHELL/'+str(property_ids[i])+'\n')
+            inf.write('PID_v'+str(i+1)+'\n')
+            inf.write("#   Ishell    Ismstr     Ish3n    Idrill                            P_thick_fail\n")
+            inf.write("        24         0         0         0                                       0\n")
+            inf.write("#                 hm                  hf                  hr                  dm                  dn\n")
+            inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('','0','', '0','','0','','0','','0'))
+            inf.write("#        N   Istrain               Thick              Ashear              Ithick     Iplas\n")
+            inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('5','0','', str(thickness_list[i]),'', '1', '', '1', '1',''))
+            # inf.write("{:>40}\n".format(str(thickness_list[i])))
+        ######################################################################################## 
+        inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")   
+        inf.write("/PROP/SHELL/7\n")
+        inf.write("PID_h\n")
+        inf.write("#   Ishell    Ismstr     Ish3n    Idrill                            P_thick_fail\n")
+        inf.write("        24         0         0         0                                       0\n")
+        inf.write("#                 hm                  hf                  hr                  dm                  dn\n")
+        inf.write("                   0                   0                   0                   0                   0\n")
+        inf.write("#        N   Istrain               Thick              Ashear              Ithick     Iplas\n")
+        inf.write("         5         0                  .7                   1                   1         1\n")
+        inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
+        inf.write("/END\n")
+        inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
+    
+
+    def write_input_file(self, thickness_list, property_ids=[2,3,4,5,6]):
+        # 1 -> all 5 shell thickness vary with same value. 
+        # 2 -> only first and the last shell thickness vary, other fixed with middle value. 
+        # 3 -> the first, middle, and last shell thickness vary. 
+        # 4 -> expect for middle shell, the other 4 shell thickness vary.
+        # 5 -> all three shell thickness vary.
+        
+        self.write_shell_property(thickness_list, property_ids)
+        self.merge_files("ThreePointBending_0000.rad", ["ThreePointBending_base.rad", "shell.rad"])
+
+
 class CrashTubeModel(StarBoxModel):
     def __init__(self, mesh: CrashTubeMesh, **kwargs) -> None:
         self.mesh = mesh
@@ -403,6 +474,7 @@ class CrashTubeModel(StarBoxModel):
             'wall_mass': 300.0,
             'wall_vel': 8.33,
         }
+        self.rigid_mass = self.impactor_defaults['wall_mass']
         
         # Define default parameters for load_database
         self.database_defaults = {

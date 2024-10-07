@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import shutil
 from .solver import run_radioss
 from .mesh import *
 from .fem import *
@@ -27,6 +28,7 @@ class OptiProblem():
         self.variable_ranges = None # constraints of the problem
         self.input_file_name = None # input deck name
         self.output_file_name = None # output result name
+        self.starter_out_file_name = None
 
         # The attributes will be loaded if the function _write_input_file has been called. 
         # Used for mass calculation.
@@ -86,6 +88,8 @@ class OptiProblem():
 
         original_dir = os.getcwd()
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
+        print('######################################################\n')
+        print(dir_name)
         working_dir = os.path.join(os.getcwd(), dir_name)
         if not os.path.exists(working_dir):
             os.makedirs(working_dir)
@@ -95,11 +99,10 @@ class OptiProblem():
 
         self.problem_id += 1 # update the problem id for the input deck generation
         
-
     def _write_input_file(self, fem_space_variable_array):
         raise NotImplementedError("Subclasses must implement _write_input_file method")
     
-    def run_simulation(self):
+    def run_simulation(self,runStarter=False):
         if self.input_file_name is None:
             raise ValueError("input_file_name must be provided or defined in the subclass.")
         # make problem id back to original, since it has been updated when generate_input_deck has been called
@@ -107,7 +110,11 @@ class OptiProblem():
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
         working_dir = os.path.join(os.getcwd(), dir_name)
         input_file_path = os.path.join(working_dir, self.input_file_name)
-        run_radioss(input_file_path, self.batch_file_path)
+        run_radioss(input_file_path, self.batch_file_path, runStarter=runStarter)
+
+    def load_output_data_frame(self):
+        dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
+        working_dir = os.path.join(os.getcwd(), dir_name)
         # load simulation result dataframe and make it cleaner
         output_file_path = os.path.join(working_dir, self.output_file_name)
         self.output_data_frame = pd.read_csv(output_file_path)
@@ -115,14 +122,39 @@ class OptiProblem():
         # update problem id again
         self.problem_id += 1
 
+    def extract_mass_from_file(self):
+        dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
+        working_dir = os.path.join(os.getcwd(), dir_name)
+        # load simulation result dataframe and make it cleaner
+        starter_out_file_path = os.path.join(working_dir, self.starter_out_file_name)
+        # Open the file and read its contents
+        with open(starter_out_file_path, 'r') as file:
+            lines = file.readlines()
+        # Define the marker for where the mass value starts
+        mass_marker = "TOTAL MASS AND MASS CENTER"
+        
+        # Iterate through each line to find the marker
+        for i, line in enumerate(lines):
+            if mass_marker in line:
+                # The mass value is two lines after the marker
+                mass_line = lines[i+4].strip()
+                # Split the mass line and extract the first value, which is the mass
+                mass_value = mass_line.split()[0]
+                return float(mass_value)
+
+        return ValueError("Mass value output failed!")  # Return None if the mass value wasn't found 
+
     def __call__(self, variable_array):
         self.generate_input_deck(variable_array)
         if self.output_data == 'mass':
-            result = self.model.mass()
+            self.run_simulation(runStarter=True)
+            result = self.extract_mass_from_file() - self.model.rigid_mass
+            self.problem_id += 1
         elif self.output_data == 'absorbed_energy':
             result = self.model.absorbed_energy()
         elif self.output_data == 'intrusion':
             self.run_simulation()
+            self.load_output_data_frame()
             matching_columns = [col for col in self.output_data_frame.columns if self.track_node_key in col]
             max_z = max(self.output_data_frame[matching_columns[2]], key=abs)
             return abs(max_z)
@@ -151,6 +183,7 @@ class StarBox(OptiProblem):
         self.variable_ranges = variable_ranges_map[self.dimension]
         self.input_file_name = 'combine.k'
         self.output_file_name = 'combineT01.csv'
+        self.starter_out_file_name = 'combine_0000.out'
         self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
 
         self.problem_id = StarBox.instance_counter
@@ -163,6 +196,11 @@ class StarBox(OptiProblem):
     
 
 class ThreePointBending(OptiProblem):
+    '''
+    This optimization problem focuses on adjusting thickness, unlike the Star Box and Crash Tube problems that involve remeshing. 
+    The key process involves extracting the section of the input file related to thickness, modifying it, and merging it back with the original input to generate a new starter file.
+    '''
+    instance_counter = 1
     def __init__(self, dimension, output_data, batch_file_path) -> None:
         super().__init__(dimension, output_data, batch_file_path)
         # 1 -> all 5 shell thickness vary with same value. 
@@ -178,8 +216,71 @@ class ThreePointBending(OptiProblem):
             5: [(0.5, 3)]*5
         }
         self.variable_ranges = variable_ranges_map[self.dimension]
+        self.variable_range = (0.5, 3)
         self.input_file_name = 'ThreePointBending_0000.rad'
         self.output_file_name = 'ThreePointBendingT01.csv'
+        self.starter_out_file_name = 'ThreePointBending_0000.out'
+        self.track_node_key = 'intrusionTrack44721' # the key of the intrusion in the output csv file
+
+        self.problem_id = ThreePointBending.instance_counter
+        ThreePointBending.instance_counter+=1
+
+    def generate_input_deck(self, variable_array):
+        '''
+        Special generate_input_deck function for Three point bending model, transform it into thickness mapping.
+        '''
+        self._validate_variable_array(variable_array)
+        
+        thickness_array = [] # to get the thickness in the FEM space
+        if len(variable_array)==1:
+            variable_array = [variable_array[0]]*5
+        elif len(variable_array)==2:
+            variable_array = [variable_array[0],0,0,0,variable_array[1]]
+        elif len(variable_array)==3:
+            variable_array = [variable_array[0],0,variable_array[1],0,variable_array[2]]
+        elif len(variable_array)==4:
+            variable_array = [variable_array[0],variable_array[1],0,variable_array[2],variable_array[3]]
+
+        for i, var in enumerate(variable_array):
+            mapped_var = self.linear_maping_variable(var, self.variable_range)
+            thickness_array.append(mapped_var)
+
+        original_dir = os.getcwd()
+        dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
+        working_dir = os.path.join(os.getcwd(), dir_name)
+        if not os.path.exists(working_dir):
+            os.makedirs(working_dir)
+        os.chdir(working_dir)
+        self._write_input_file(thickness_array)
+        os.chdir(original_dir)
+
+        self.problem_id += 1 # update the problem id for the input deck generation
+
+    def _copy_files_to_deck(self):
+        # Get the path to the lib directory relative to the current file
+        deck_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
+
+        lib_dir = os.path.join(os.path.dirname(__file__), 'lib')
+        
+        # Source file paths
+        source_files = ['ThreePointBending_base.rad', 'ThreePointBending_0001.rad']  # Copy base starter file and engine files
+        # Destination folder path
+        dest_folder = os.getcwd()
+        
+        # Create the destination folder if it doesn't exist
+        os.makedirs(dest_folder, exist_ok=True)
+        
+        # Copy each source file to the destination folder
+        for file_name in source_files:
+            source_path = os.path.join(lib_dir, file_name)
+            dest_path = os.path.join(dest_folder, file_name)
+            shutil.copyfile(source_path, dest_path)
+
+    def _write_input_file(self, thickness_array):
+        self._copy_files_to_deck()
+        self.model = ThreePointBendingModel()
+        self.model.write_input_file(thickness_array)
+
 
 class CrashTube(OptiProblem):
     instance_counter = 1
@@ -200,6 +301,7 @@ class CrashTube(OptiProblem):
         self.variable_ranges = variable_ranges_map[self.dimension]
         self.input_file_name = 'combine.k'
         self.output_file_name = 'combineT01.csv'
+        self.starter_out_file_name = 'combine_0000.out'
         self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
 
         self.problem_id = CrashTube.instance_counter

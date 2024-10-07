@@ -326,7 +326,6 @@ def py_mesh_v2(var_file, save=True):
             # trigger_position_vars = np.array([10, -10, 10])
             trigger_depths = variables['trigger_depths']
             trigger_position_vars = variables['trigger_positions']
-            print(trigger_position_vars)
             trigger_position_vars_el = np.round(trigger_position_vars / elsize).astype(int)
             if pid in trigger_cells:
                 for j in range(1,4): # three triggers

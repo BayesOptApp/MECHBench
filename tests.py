@@ -1,5 +1,6 @@
 from src import sob
 import numpy as np
+import os
 
 batch_file_path = "D:/OpenRadioss/win_scripts_mk3/openradioss_run_script_ps.bat"
 
@@ -66,3 +67,57 @@ def check_crashtube_mesh_generation():
 def check_crashtube_problem():
     c = sob.get_problem(3,4,'intrusion',batch_file_path)
     print(c([1,2,3,4]))
+
+def check_threepointbending_problem():
+    '''
+    This function tests the behavior of the three-point bending problem for different 
+    performance metrics such as mass, absorbed energy, and intrusion. It demonstrates 
+    how these metrics change based on different input parameters.
+
+    Three separate problem instances are retrieved using the `get_problem` method from 
+    the `sob` module for each metric:
+    - 'mass': Measures the mass of the structure.
+    - 'absorbed_energy': Quantifies the energy absorbed during bending.
+    - 'intrusion': Represents the amount of intrusion during bending.
+
+    Example variable arrays tested:
+    - For 'mass': [1, 2, 3, 4]
+    - For 'absorbed_energy': [-1, 2, 3, -2]
+    - For 'intrusion': [0, -4, 2, 0]
+
+    The function prints the output for each metric based on the provided variable arrays.
+    '''
+    a = sob.get_problem(2,4,'mass',batch_file_path)
+    b = sob.get_problem(2,4,'absorbed_energy',batch_file_path)
+    c = sob.get_problem(2,4,'intrusion',batch_file_path)
+    print("mass:"+str(a([1,2,3,4])))
+    print("absorbed energy:"+str(b([-1,2,3,-2])))
+    print("intrusion:"+str(c([0,-4,2,0])))
+
+def check_mass_output():
+    '''
+    This function evaluates the mass output for a crash tube problem by running different 
+    variable arrays through the optimization problem instance. It demonstrates how the 
+    mass changes when varying input parameters.
+
+    The problem instance is retrieved using the `get_problem` method from the `sob` module, 
+    with specific indices and a target of 'mass'. Three different variable arrays are passed 
+    to the instance, and their corresponding mass outputs are printed.
+
+    Example variable arrays tested:
+    - [-1, -3, 4, -5, 2, 3]
+    - [-1, -3, 2, -5, 3, 1]
+    - [-1, -3, 2, -5, -5, 5]
+
+    The function outputs the corresponding mass for each case.
+    '''
+    instance = sob.get_problem(3,6,'mass',batch_file_path)
+    a = instance([-1,-3,4,-5,2,3])
+    b = instance([-1,-3,2,-5,3,1])
+    c = instance([-1,-3,2,-5,-5,5])
+    print(a)
+    print(b)
+    print(c)
+
+
+check_intrusion()
