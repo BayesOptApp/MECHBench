@@ -18,9 +18,9 @@ class OptiProblem():
     The core idea is to generate a specific type of instance, input the variable array then output the evaluation of the desired data type like mass, intrusion, etc.
     The input variables should be in an universal search space, default (-5,5). For the evaluation those variables will be mapped to the real FEM problem space.
     '''
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
+    def __init__(self, dimension:int, output_data:(str|list), batch_file_path:str) -> None:
         self.dimension = dimension
-        self.output_data = output_data
+        self.output_data:(str|list) = output_data
         self.batch_file_path = batch_file_path
 
         # The attributes need to be overwritten in teh subclass
@@ -40,6 +40,13 @@ class OptiProblem():
         
         # Universal design variable search space
         self.search_space = (-5.0, 5.0)
+
+        # TODO: This is a dummy variable for defining the simulation status:
+        #   0 -> Simulation not started
+        #   1 -> Just starter launched
+        #   2 -> Full simulation
+
+        self.sim_status:int = 0
 
     def _validate_variable_array(self, variable_array):
         """
@@ -79,6 +86,8 @@ class OptiProblem():
         return problem_space_variable
 
     def generate_input_deck(self, variable_array):
+        # Change the simulation status
+        self.sim_status = 0
         self._validate_variable_array(variable_array)
 
         fem_space_variable_array = [] # to get the variables in the FEM space
@@ -145,19 +154,95 @@ class OptiProblem():
         return ValueError("Mass value output failed!")  # Return None if the mass value wasn't found 
 
     def __call__(self, variable_array):
-        self.generate_input_deck(variable_array)
-        if self.output_data == 'mass':
-            self.run_simulation(runStarter=True)
-            result = self.extract_mass_from_file() - self.model.rigid_mass
-            self.problem_id += 1
-        elif self.output_data == 'absorbed_energy':
-            result = self.model.absorbed_energy()
-        elif self.output_data == 'intrusion':
-            self.run_simulation()
-            self.load_output_data_frame()
-            matching_columns = [col for col in self.output_data_frame.columns if self.track_node_key in col]
-            max_z = max(self.output_data_frame[matching_columns[2]], key=abs)
+
+        ## --------------------------------------------
+        ## TODO: This functions are just to be recycled
+        ## --------------------------------------------
+
+        def mass_calculation(obj_:OptiProblem)->float:
+            if obj_.sim_status < 1: 
+                obj_.run_simulation(runStarter=True)
+                # Change the status
+                obj_.sim_status = 1
+
+            val:float = obj_.extract_mass_from_file() - obj_.model.rigid_mass
+            obj_.problem_id +=1    
+            return val
+
+        def absorbed_energy_calculation(obj_:OptiProblem)->float:
+            return obj_.model.absorbed_energy()
+        
+        def instrusion_calculation(obj_:OptiProblem)->float:
+            obj_.run_simulation()
+            obj_.load_output_data_frame()
+            matching_columns = [col for col in obj_.output_data_frame.columns if obj_.track_node_key in col]
+            max_z:float = max(obj_.output_data_frame[matching_columns[2]], key=abs)
+
+            # Change the sim status
+            self.sim_status = 2
             return abs(max_z)
+
+        # This line is everpresent...
+        # First generate all the input deck for OpenRadioss
+        self.generate_input_deck(variable_array)
+
+        # This structure just checks if the kind of output data is a string
+        # or lone variable
+        if isinstance(self.output_data,str):
+            if self.output_data == 'mass':
+                result = mass_calculation(self,True)
+            elif self.output_data == 'absorbed_energy':
+                result = absorbed_energy_calculation(self)
+            elif self.output_data == 'intrusion':
+                result = instrusion_calculation(self)
+            elif self.output_data == 'specific_energy':
+                # Compute first the absorbed energy
+                abs_ene:float = absorbed_energy_calculation(self)
+
+                # Compute the mass
+                mass:float = mass_calculation(self)
+
+                result = abs_ene/mass       
+            else:
+                result = np.nan
+        elif isinstance(self.output_data,list):
+
+            resp_arr = list()
+            looping_array = self.output_data.copy()
+            idx:int = -1
+            # Check is intrusion is in the list
+            if 'intrusion' in self.output_data:
+                # Get the position of "instrusion" in the array
+                idx:int = self.output_data.index('intrusion')
+
+                looping_array.pop(idx)
+            
+            # Now loop the calculations 
+            for out_ in looping_array:
+                if out_ == 'mass':
+                    resp_arr.append( mass_calculation(self) )
+                elif out_ == 'absorbed_energy':
+                    resp_arr.append( absorbed_energy_calculation(self) )
+                elif out_ == 'specific_energy':
+                    # Compute first the absorbed energy
+                    abs_ene:float = absorbed_energy_calculation(self)
+
+                    # Compute the mass
+                    mass:float = mass_calculation(self)
+
+                    resp_arr.append( abs_ene/mass )      
+                else:
+                    resp_arr.append( np.nan )
+
+            if idx !=-1:
+                # Append
+                # perform the intrusion calculation first
+                instrusion_calc = instrusion_calculation(self)
+                resp_arr.insert( idx,instrusion_calc)
+
+            return resp_arr
+            
+            
         else:
             result = None
         

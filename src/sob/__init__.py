@@ -1,6 +1,6 @@
 from .problems import *
 
-def get_problem(model_type, dimension, output_data, batch_file_path):
+def get_problem(model_type, dimension, output_data, batch_file_path, **kwargs):
     '''
     Generates a problem instance based on the specified model type and configuration.
 
@@ -40,6 +40,7 @@ def get_problem(model_type, dimension, output_data, batch_file_path):
         - 'mass'
         - 'absorbed_energy'
         - 'intrusion' (Requires running FEM simulation while 'mass' and 'absorbed_energy' do not require one.)
+        - 'specific-energy' (Computes the SEA by operating the mass and absorbed energy)
 
     batch_file_path : str
         Path to the OpenRadioss batch file.

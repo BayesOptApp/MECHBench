@@ -4,7 +4,7 @@ import pandas as pd
 import platform
 #import glob
 import os
-import multiprocessing
+import multiprocessing as mp
 import json
 
 
@@ -17,13 +17,19 @@ INPUT_DIRECTORY:str = "INPUT"
 OUTPUT_DIRECTORY:str = "OUTPUT"
 JSON_FILE_PATH:str= "problem.json"
 
+GSA_REPORT_PATH:str= "/home/ivanolar/Documentos/GSA_Report_Git/GSAreport/src/GSAreport.py"
+
+OPENRADIOSS_SETUP_FILE_LINUX:str = "/home/ivanolar/Documentos/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/Tools/openradioss_gui/runopenradioss.py"
+
+
+SLURM_ENVIRONMENT = "SLURM_JOB_ID" in os.environ
 
 
 # Set the problem dimension here
-PROBLEM_DIMENSION:int = 2
+PROBLEM_DIMENSION:int = 5
 
 # Number of Samples
-NUM_SAMPLES:int = 10
+NUM_SAMPLES:int = 512
 
 # Set the output data type for the problem
 POSSIBLE_OUTPUT_DATA:tuple = ("mass","absorbed_energy","intrusion")
@@ -84,17 +90,54 @@ def generate_samples(num_samples:int,prob_def:dict)->dict:
     return {"sobol":sobol_samples,
             "morris":morris_samples,
             "lhs":lhs_samples}
+
+
+def generate_samples2(num_samples:int,definition:dict)->dict:
+
+    # Import the processing library to use the command window
+    import subprocess
     
+    # Construct the command to run the batch file with arguments
+    command:list = [
+        "python3", # Additional setup to call the Python3 Setup
+        GSA_REPORT_PATH, # Path to GSA Report
+        "-p",
+        os.path.join(CURRENT_DIRECTORY,JSON_FILE_PATH),
+        "-d",
+        os.path.join(CURRENT_DIRECTORY,INPUT_DIRECTORY),
+        "--sample",
+        "--samplesize",
+        str(num_samples)
+    ]
+
+    try:
+        subprocess.run(command,check=True,shell=False)
+    except subprocess.CalledProcessError as e:
+        print("Error occurred with the activation", e.args)
+    except subprocess.SubprocessError as e:
+        print("Subprocess error", e.args)
+    except Exception as e:
+        print("Weird Error occured", e.args)
+
+    
+    # Generate a directory with the samples
+    try:
+        return {"sobol":np.loadtxt(os.path.join(CURRENT_DIRECTORY,INPUT_DIRECTORY,"x_sobol.csv"),dtype=float),
+            "morris":np.loadtxt(os.path.join(CURRENT_DIRECTORY,INPUT_DIRECTORY,"x_morris.csv"),dtype=float),
+            "lhs":np.loadtxt(os.path.join(CURRENT_DIRECTORY,INPUT_DIRECTORY,"x_lhs.csv"),dtype=float)}
+    except FileNotFoundError as e:
+        raise FileNotFoundError("One of the files wasn't found", e.args)
+    except Exception as e:
+        print("A weird exception has happened")
 
 
 
 def set_up_problem(problem_type:int=1,
                    dimension:int=2,
-                   output_data:str="intrusion")->(sob.problems.CrashTube|sob.problems.StarBox|sob.problems.ThreePointBending):
+                   output_data:str="intrusion")->(sob.problems):
     linux_system = not platform.system()=="Windows"
     if linux_system:
-        #batch_file_path = "/media/feifan/TSHIBA/12_GitHub/OpenRadioss/linux_scripts_mk3/openradioss_run_script_ps.sh"
-        batch_file_path = "/home/ivanolar/Documentos/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/Tools/openradioss_gui/runopenradioss.py"
+        batch_file_path = OPENRADIOSS_SETUP_FILE_LINUX
         
     else:
         #batch_file_path = "D:/OpenRadioss/win_scripts_mk3/openradioss_run_script_ps.bat"
@@ -105,7 +148,7 @@ def set_up_problem(problem_type:int=1,
 
 
 ## TODO: This function shall be modified further to get the names of the variables
-def generate_json(problem:(sob.problems.CrashTube|sob.problems.StarBox|sob.problems.ThreePointBending))->None:
+def generate_json(problem:(sob.problems))->None:
     
     if isinstance(problem,sob.problems.CrashTube):
         
@@ -135,7 +178,7 @@ def generate_json(problem:(sob.problems.CrashTube|sob.problems.StarBox|sob.probl
         raise("something wrong happened!",
               e.args)
         
-    dumper = json.dump(obj=prob_dict,fp=fp_obj,indent=6)
+    json.dump(obj=prob_dict,fp=fp_obj,indent=6)
     fp_obj.close()
 
     return prob_dict
@@ -159,7 +202,7 @@ def main():
     prob_def:dict = generate_json(a)
 
     # Generate the samples
-    sample_dict:dict = generate_samples(num_samples=NUM_SAMPLES,prob_def=prob_def)
+    sample_dict:dict = generate_samples2(num_samples=NUM_SAMPLES,definition=prob_def)
 
 
     # Run the experiments
@@ -170,8 +213,7 @@ def main():
     # Loop for all the sampling types
     for key,samples in sample_dict.items():
         # Write the corresponding files
-        np.savetxt(os.path.join(CURRENT_DIRECTORY,INPUT_DIRECTORY,f"x_{key}"),np.array(samples))
-
+        
         # Loop for all the samples
         for _, iSampl in enumerate(samples):
             # Feed the object definition
