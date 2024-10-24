@@ -5,7 +5,7 @@ import os
 def run_radioss(input_file_path, 
                 batch_file_path, 
                 isShell = False, 
-                write_vtk= False, 
+                write_vtk= True, 
                 write_csv = True, 
                 runStarter = False,
                 d3plot=False):
@@ -13,14 +13,21 @@ def run_radioss(input_file_path,
     # TODO: This is an input line to get the number ofcores available to run
     
     #if os.cpu_count() > 1: nt = str(int(os.cpu_count()/2))
-    if os.cpu_count() > 1: nt = str(8)
-    else: nt="1"
+    #if os.cpu_count() > 1: nt = str(8)
+    #else: nt="1"
+
+    nt = "4"
 
     # Get the directory of the folder storing the deck files
     curdir = os.path.dirname(input_file_path)
 
     np = "1"
-    sp = "sp"  # "sp" or any other value for non-sp
+
+    #######
+    # ------------- WARNING ----------------------
+    # Simulations 
+    #######
+    sp = "sp"  # "sp" or any other value for non-sp 
 
     if write_vtk:
         # "yes" or "no" depending on whether you want to convert Anim files to vtk (for ParaView)
