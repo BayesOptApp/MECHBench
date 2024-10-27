@@ -5,18 +5,29 @@ import os
 def run_radioss(input_file_path, 
                 batch_file_path, 
                 isShell = False, 
-                write_vtk= False, 
+                write_vtk= True, 
                 write_csv = True, 
                 runStarter = False,
                 d3plot=False):
     
     # TODO: This is an input line to get the number ofcores available to run
     
-    if os.cpu_count() > 1: nt = "4"
-    else: nt="1"
+    #if os.cpu_count() > 1: nt = str(int(os.cpu_count()/2))
+    #if os.cpu_count() > 1: nt = str(8)
+    #else: nt="1"
+
+    nt = "4"
+
+    # Get the directory of the folder storing the deck files
+    curdir = os.path.dirname(input_file_path)
 
     np = "1"
-    sp = "sp"  # "sp" or any other value for non-sp
+
+    #######
+    # ------------- WARNING ----------------------
+    # Simulations 
+    #######
+    sp = "sp"  # "sp" or any other value for non-sp 
 
     if write_vtk:
         # "yes" or "no" depending on whether you want to convert Anim files to vtk (for ParaView)
@@ -53,9 +64,18 @@ def run_radioss(input_file_path,
         d3_plot_option # TODO: This is for the 3d plot option which is not considered
     ]
 
+    # Create input output Wrappers
+    out_out = open(os.path.join(curdir,"output.txt"),
+                   mode="w+",encoding="utf-8")
+    
+    error_out = open(os.path.join(curdir,"error.txt"),
+                   mode="w+",encoding="utf-8")
     try:
         # Run the batch file and wait for it to complete
-        subprocess.run(command, check=True, shell=isShell)
+        subprocess.run(command, check=True, shell=isShell,
+                       stderr=error_out,
+                       stdout=out_out,
+                       encoding="utf-8")
         print("Batch file executed successfully.")
 
         # Check if there was an error
@@ -63,3 +83,7 @@ def run_radioss(input_file_path,
         raise subprocess.CalledProcessError(f"Error running batch file: {e}")
     except Exception as e:
         raise Exception(f"An error occurred: {e}")
+    else:
+        # Close the I/O connectors
+        out_out.close()
+        error_out.close()

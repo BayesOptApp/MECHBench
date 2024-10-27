@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from typing import List, Iterable
 import shutil
 from .solver import run_radioss
 from .mesh import *
@@ -18,13 +19,14 @@ class OptiProblem():
     The core idea is to generate a specific type of instance, input the variable array then output the evaluation of the desired data type like mass, intrusion, etc.
     The input variables should be in an universal search space, default (-5,5). For the evaluation those variables will be mapped to the real FEM problem space.
     '''
-    def __init__(self, dimension:int, output_data:(str|list), batch_file_path:str) -> None:
-        self.dimension = dimension
-        self.output_data:(str|list) = output_data
-        self.batch_file_path = batch_file_path
+    def __init__(self, dimension:int, output_data:Iterable, batch_file_path:str,sequential_id_numbering:bool=True) -> None:
+        self.__dimension:int = dimension
+        self.__output_data:Iterable = output_data
+        self.__batch_file_path:str = batch_file_path
+        self.__sequential_id_numbering:bool = sequential_id_numbering
 
         # The attributes need to be overwritten in teh subclass
-        self.problem_id = None
+        self.__problem_id:int = -1 
         self.variable_ranges = None # constraints of the problem
         self.input_file_name = None # input deck name
         self.output_file_name = None # output result name
@@ -106,7 +108,8 @@ class OptiProblem():
         self._write_input_file(fem_space_variable_array)
         os.chdir(original_dir)
 
-        self.problem_id += 1 # update the problem id for the input deck generation
+        if self.__sequential_id_numbering:
+            self.problem_id += 1 # update the problem id for the input deck generation
         
     def _write_input_file(self, fem_space_variable_array):
         raise NotImplementedError("Subclasses must implement _write_input_file method")
@@ -115,7 +118,9 @@ class OptiProblem():
         if self.input_file_name is None:
             raise ValueError("input_file_name must be provided or defined in the subclass.")
         # make problem id back to original, since it has been updated when generate_input_deck has been called
-        self.problem_id -= 1
+        if self.__sequential_id_numbering:
+            self.problem_id -= 1
+
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
         working_dir = os.path.join(os.getcwd(), dir_name)
         input_file_path = os.path.join(working_dir, self.input_file_name)
@@ -129,7 +134,8 @@ class OptiProblem():
         self.output_data_frame = pd.read_csv(output_file_path)
         self.output_data_frame.columns = self.output_data_frame.columns.str.replace(' ', '')
         # update problem id again
-        self.problem_id += 1
+        if self.__sequential_id_numbering:
+            self.problem_id += 1
 
     def extract_mass_from_file(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
@@ -153,10 +159,14 @@ class OptiProblem():
 
         return ValueError("Mass value output failed!")  # Return None if the mass value wasn't found 
 
-    def __call__(self, variable_array):
-
+    def __call__(self, variable_array:list, problem_id:int=-1):
+        
+        # This is a force fork to make sure the problem_id is well set
+        if not self.__sequential_id_numbering:
+            self.problem_id = problem_id
+        
         ## --------------------------------------------
-        ## TODO: This functions are just to be recycled
+        ## TODO: These functions are just to be recycled
         ## --------------------------------------------
 
         def mass_calculation(obj_:OptiProblem)->float:
@@ -166,7 +176,9 @@ class OptiProblem():
                 obj_.sim_status = 1
 
             val:float = obj_.extract_mass_from_file() - obj_.model.rigid_mass
-            obj_.problem_id +=1    
+            if self.__sequential_id_numbering:
+                obj_.problem_id +=1  
+
             return val
 
         def absorbed_energy_calculation(obj_:OptiProblem)->float:
@@ -204,20 +216,16 @@ class OptiProblem():
 
                 result = abs_ene/mass       
             else:
-                result = None
+                result = np.nan
         elif isinstance(self.output_data,list):
 
             resp_arr = list()
-            intrusion_calc = None
             looping_array = self.output_data.copy()
             idx:int = -1
             # Check is intrusion is in the list
             if 'intrusion' in self.output_data:
                 # Get the position of "instrusion" in the array
                 idx:int = self.output_data.index('intrusion')
-
-                # perform the intrusion calculation first
-                instrusion_calc = instrusion_calculation(self)
 
                 looping_array.pop(idx)
             
@@ -236,10 +244,12 @@ class OptiProblem():
 
                     resp_arr.append( abs_ene/mass )      
                 else:
-                    resp_arr.append( None )
+                    resp_arr.append( np.nan )
 
             if idx !=-1:
                 # Append
+                # perform the intrusion calculation first
+                instrusion_calc = instrusion_calculation(self)
                 resp_arr.insert( idx,instrusion_calc)
 
             return resp_arr
@@ -248,13 +258,73 @@ class OptiProblem():
         else:
             result = None
         
-        return result        
+        return result
+
+    @property
+    def problem_id(self)->int:
+        return self.__problem_id
+    
+    @property
+    def dimension(self)->int:
+        return self.__dimension
+    
+    @property
+    def batch_file_path(self)->str:
+        return self.__batch_file_path
+    
+    @property
+    def output_data(self):
+        return self.__output_data
+    
+    @property
+    def sequential_id_numbering(self):
+        return self.__sequential_id_numbering
+    
+
+    @problem_id.setter
+    def problem_id(self,new_problem_id:int)->None:
+        
+        if not isinstance(new_problem_id,int):
+            raise TypeError("The type of the object is not correct")
+        
+        else:
+            if new_problem_id <= 0:
+                raise ValueError("The value must be greater than 0")
+            # Assign the new problem ID
+            self.__problem_id = new_problem_id
+    
+    @batch_file_path.setter
+    def batch_file_path(self, new_batch_file_path:str)->None:
+
+        if not isinstance(new_batch_file_path,str):
+            raise TypeError("The batch file is not a string")
+        else:
+            if not os.path.exists(new_batch_file_path):
+                raise("The batch file does not exist")
+            else:
+                # Set the new batch file path
+                self.__batch_file_path = new_batch_file_path
+
+    @output_data.setter
+    def output_data(self, new_output_data)->None:
+        self.__output_data = new_output_data
+    
+    @batch_file_path.deleter
+    def batch_file_path(self)->None:
+        del self.__batch_file_path
+    
+    @output_data.deleter
+    def output_data(self)->None:
+        del self.__output_data
+
+
 
 
 class StarBox(OptiProblem):
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
-        super().__init__(dimension, output_data, batch_file_path)
+
+    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool) -> None:
+        super().__init__(dimension, output_data, batch_file_path,sequential_id_numbering)
         # 1 -> square
         # 2 -> rectangular
         # 3 -> rectangular with varying thickness
@@ -273,8 +343,9 @@ class StarBox(OptiProblem):
         self.starter_out_file_name = 'combine_0000.out'
         self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
 
-        self.problem_id = StarBox.instance_counter
-        StarBox.instance_counter+=1
+        if self.sequential_id_numbering:
+            self.problem_id = StarBox.instance_counter
+            StarBox.instance_counter+=1
 
     def _write_input_file(self, fem_space_variable_array):
         self.mesh = StarBoxMesh(fem_space_variable_array) 
@@ -288,8 +359,8 @@ class ThreePointBending(OptiProblem):
     The key process involves extracting the section of the input file related to thickness, modifying it, and merging it back with the original input to generate a new starter file.
     '''
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
-        super().__init__(dimension, output_data, batch_file_path)
+    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool) -> None:
+        super().__init__(dimension, output_data, batch_file_path,sequential_id_numbering)
         # 1 -> all 5 shell thickness vary with same value. 
         # 2 -> only first and the last shell thickness vary, other fixed with middle value. 
         # 3 -> the first, middle, and last shell thickness vary. 
@@ -309,8 +380,9 @@ class ThreePointBending(OptiProblem):
         self.starter_out_file_name = 'ThreePointBending_0000.out'
         self.track_node_key = 'intrusionTrack44721' # the key of the intrusion in the output csv file
 
-        self.problem_id = ThreePointBending.instance_counter
-        ThreePointBending.instance_counter+=1
+        if self.sequential_id_numbering:
+            self.problem_id = ThreePointBending.instance_counter
+            ThreePointBending.instance_counter+=1
 
     def generate_input_deck(self, variable_array):
         '''
@@ -371,8 +443,8 @@ class ThreePointBending(OptiProblem):
 
 class CrashTube(OptiProblem):
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
-        super().__init__(dimension, output_data, batch_file_path)
+    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool) -> None:
+        super().__init__(dimension, output_data, batch_file_path,sequential_id_numbering)
         # 2 -> three positions and depths vary together with same value. 
         # 3 -> all three trigger positions fixed, the three trigger depth vary. 
         # 4 -> except for middle trigger position and depth, other 4 vary ().
@@ -391,8 +463,9 @@ class CrashTube(OptiProblem):
         self.starter_out_file_name = 'combine_0000.out'
         self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
 
-        self.problem_id = CrashTube.instance_counter
-        CrashTube.instance_counter+=1
+        if self.sequential_id_numbering:
+            self.problem_id = CrashTube.instance_counter
+            CrashTube.instance_counter+=1
 
     def _write_input_file(self, fem_space_variable_array):
         self.mesh = CrashTubeMesh(fem_space_variable_array) 

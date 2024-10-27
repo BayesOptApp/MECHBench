@@ -1,6 +1,8 @@
 from .problems import *
+from typing import Iterable
 
-def get_problem(model_type, dimension, output_data, batch_file_path):
+def get_problem(model_type:int, dimension:int, output_data:Iterable, batch_file_path:str, 
+                sequential_id_numbering:bool=True,**kwargs):
     '''
     Generates a problem instance based on the specified model type and configuration.
 
@@ -40,18 +42,19 @@ def get_problem(model_type, dimension, output_data, batch_file_path):
         - 'mass'
         - 'absorbed_energy'
         - 'intrusion' (Requires running FEM simulation while 'mass' and 'absorbed_energy' do not require one.)
+        - 'specific-energy' (Computes the SEA by operating the mass and absorbed energy)
 
     batch_file_path : str
         Path to the OpenRadioss batch file.
     '''
     if model_type==1:
-        problem_instance = StarBox(dimension, output_data, batch_file_path)
+        problem_instance = StarBox(dimension, output_data, batch_file_path,sequential_id_numbering)
         return problem_instance
     elif model_type==2:
-        problem_instance = ThreePointBending(dimension, output_data, batch_file_path)
+        problem_instance = ThreePointBending(dimension, output_data, batch_file_path,sequential_id_numbering)
         return problem_instance
     elif model_type==3:
-        problem_instance = CrashTube(dimension, output_data, batch_file_path)
+        problem_instance = CrashTube(dimension, output_data, batch_file_path,sequential_id_numbering)
         return problem_instance
     else:
         raise ValueError('Invalid model type')
