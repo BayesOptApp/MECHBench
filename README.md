@@ -27,6 +27,6 @@ The project is structured as follows:
 2. In order to run the OpenRadioss solver within the module, make sure to have the job submission tool folder downloaded in the root directory of your OpenRadioss installation. You can obtain this folder from the webpage: https://openradioss.atlassian.net/wiki/spaces/OPENRADIOSS/pages/58785793/Latest+gui+scripts
 
 ## Contact constributors
-Maria Laura Santoni
-
-Feifan Li (feifan.li@tum.de)
+- Maria Laura Santoni
+- Feifan Li (feifan.li@tum.de)
+- Ivan Olarte Rodriguez (ivan.olarte.rodriguez@liacs.leidenuniv.nl)
