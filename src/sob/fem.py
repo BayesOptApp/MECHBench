@@ -235,9 +235,18 @@ class StarBoxModel():
         inf.writelines('$#      dt    binary      lcur     ioopt\n')
         inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1'))  
 
+        #inf.writelines('/TH/RWALL\n\n\n')            
+        # inf.writelines('$#      dt    binary      lcur     ioopt\n')
+        # inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1')) 
+
+
         inf.writelines('*DATABASE_SECFORC\n')            
         inf.writelines('$#      dt    binary      lcur     ioopt\n')
         inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1'))
+
+        # inf.writelines('*DATABASE_RCFORC\n')            
+        # inf.writelines('$#      dt    binary      lcur     ioopt\n')
+        # inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1'))
 
         inf.writelines('*DATABASE_SLEOUT\n')            
         inf.writelines('$#      dt    binary      lcur     ioopt\n')

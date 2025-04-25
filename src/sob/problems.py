@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from abc import ABC, abstractmethod
 from typing import List, Iterable
 import shutil
 from .solver import run_radioss
@@ -12,7 +13,7 @@ Remark: following phases are important
 1.  
 '''
 
-class OptiProblem():
+class OptiProblem(ABC):
     '''
     The abstract of the structural optimization problem, with three subclass (three problem types)
     The instance is initialized by problem dimension, output data type, and the batch file path of the solver OpenRadioss. 
@@ -110,9 +111,10 @@ class OptiProblem():
 
         if self.__sequential_id_numbering:
             self.problem_id += 1 # update the problem id for the input deck generation
-        
+    
+    @abstractmethod
     def _write_input_file(self, fem_space_variable_array):
-        raise NotImplementedError("Subclasses must implement _write_input_file method")
+        pass
     
     def run_simulation(self,runStarter=False):
         if self.input_file_name is None:
@@ -202,7 +204,7 @@ class OptiProblem():
         # or lone variable
         if isinstance(self.output_data,str):
             if self.output_data == 'mass':
-                result = mass_calculation(self,True)
+                result = mass_calculation(self)
             elif self.output_data == 'absorbed_energy':
                 result = absorbed_energy_calculation(self)
             elif self.output_data == 'intrusion':
@@ -323,21 +325,15 @@ class OptiProblem():
 class StarBox(OptiProblem):
     instance_counter = 1
 
-    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool) -> None:
+    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool,**kwargs) -> None:
         super().__init__(dimension, output_data, batch_file_path,sequential_id_numbering)
         # 1 -> square
         # 2 -> rectangular
         # 3 -> rectangular with varying thickness
         # 4 -> star shape
         # 5 -> star shape with varying thickness
-        variable_ranges_map = {
-            1: [(60, 120)],
-            2: [(60, 120), (60, 120)],
-            3: [(60, 120), (60, 120), (0.7, 3)],
-            4: [(60, 120), (60, 120), (0, 30), (0, 30)],
-            5: [(60, 120), (60, 120), (0, 30), (0, 30), (0.7, 3)]
-        }
-        self.variable_ranges = variable_ranges_map[self.dimension]
+        
+        self.variable_ranges = self._generate_variable_ranges_map(self.dimension)
         self.input_file_name = 'combine.k'
         self.output_file_name = 'combineT01.csv'
         self.starter_out_file_name = 'combine_0000.out'
@@ -346,6 +342,43 @@ class StarBox(OptiProblem):
         if self.sequential_id_numbering:
             self.problem_id = StarBox.instance_counter
             StarBox.instance_counter+=1
+    
+    @staticmethod
+    def _generate_variable_ranges_map(dimension:int)->List[tuple]:
+        r"""
+        Generates the ranges map given a dimensionality; This is a 
+        static method, which is provided with the class to call methods
+        outsude the framework.
+
+        Args
+        ----------------------
+        - dimension: `int`: An integer denoting the dimensionality set by the user
+
+        Returns
+        ----------------------
+        - `List[tuple]`: A list of tuples indicating the physical ranges of the problem.
+        """
+
+        variable_ranges_map = {
+        1: [(60, 120)],
+        2: [(60, 120), (60, 120)],
+        3: [(60, 120), (60, 120), (0.7, 3)],
+        4: [(60, 120), (60, 120), (0, 30), (0, 30)],
+        5: [(60, 120), (60, 120), (0, 30), (0, 30), (0.7, 3)] 
+                        }
+        
+        if dimension > 0 and dimension<=5:
+         
+            return variable_ranges_map[dimension]
+        
+        else:
+            base_ranges:List[tuple] = variable_ranges_map[5]
+
+            for _ in range(dimension-5):
+                base_ranges.append((0.7,3))
+            
+            return base_ranges
+
 
     def _write_input_file(self, fem_space_variable_array):
         self.mesh = StarBoxMesh(fem_space_variable_array) 
@@ -413,7 +446,9 @@ class ThreePointBending(OptiProblem):
         self._write_input_file(thickness_array)
         os.chdir(original_dir)
 
-        self.problem_id += 1 # update the problem id for the input deck generation
+        if self.sequential_id_numbering:
+            self.problem_id = ThreePointBending.instance_counter
+            ThreePointBending.instance_counter+=1
 
     def _copy_files_to_deck(self):
         # Get the path to the lib directory relative to the current file

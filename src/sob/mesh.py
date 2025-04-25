@@ -17,7 +17,7 @@ class StarBoxMesh():
 
         # Default values for configuration parameters
         self.default_parameters = {
-            'thickness': 1.2,
+            'thickness': [1.2],
             'elsize': 4,
             'extrusion_length': 120,
             'node_starting_id': 1001,
@@ -39,7 +39,24 @@ class StarBoxMesh():
         distances = np.linalg.norm(np.diff(self.grid_pts, axis=0, append=[self.grid_pts[0]]), axis=1)
         # Sum the distances to get the perimeter
         perimeter = np.sum(distances)
-        result = perimeter*self.extrusion_length*self.thickness
+
+        if self.dimension <=5:
+            result = perimeter*self.extrusion_length*self.thickness
+        elif self.dimension > 5 and self.dimension < 36:
+            # Divide the extrusion length into 30 parts
+            multiplier = self.extrusion_length/30
+            
+            # Initialise the result to be 0.00
+            result:float = 0.00
+
+            for ii in range(30):
+                result += multiplier*perimeter*self.thickness[ii]
+
+
+
+
+
+
         return result
 
     def _determine_grid_points(self):
@@ -67,10 +84,10 @@ class StarBoxMesh():
             width = self.variable_array[1] / 2
             return np.array([[-length, width], [length, width],
                                       [length, -width], [-length, -width]])
-        elif self.dimension in [4, 5]:
+        elif self.dimension >= 4:
             return self._create_grid_pts_Hunkler()
         else:
-            raise ValueError('Invalid dimension. The dimensions of the problem can only be in [1, 5]')
+            raise NotImplementedError('Invalid dimension. The dimensions of the problem can only be in [1, 35]')
         
     def _create_grid_pts_Hunkler(self):
         """
@@ -114,7 +131,7 @@ class StarBoxMesh():
             length = self.variable_array[0] / 2
             width = self.variable_array[1] / 2
             self.trigger_depth = float(kwargs.get('trigger_depth', 0.05 * (length + width) / 2))
-        elif self.dimension in [4, 5]:
+        elif self.dimension >= 4:
             a = self.variable_array[0]
             b = self.variable_array[1]
             u = self.variable_array[2]
@@ -161,7 +178,40 @@ class StarBoxMesh():
             self.trigger_rows = 3
 
         if self.dimension in [3, 5]:
-            self.thickness = self.variable_array[-1]
+            self.thickness[0] = self.variable_array[-1]
+        
+        elif self.dimension in [1,2,4]:
+            self.thickness[0] = self.thickness
+
+        elif self.dimension >=5 and self.dimension <= 35:
+            # Set some arrays which will be interpolated
+            base_array = np.linspace(0.0,
+                                     self.extrusion_length,
+                                     num=self.dimension-4,
+                                     endpoint=True)
+            
+            range_to_interpolate = self.variable_array[4:]
+
+            # Instantiate a list of thicknesses and positions
+            #list_of_thicknesses = np.zeros((30,)).tolist()
+
+            # List of positions
+            pos_array = np.linspace(2,self.extrusion_length-2,
+                                    num=30,endpoint=True)
+            
+            # TODO: Modify interpolation // This is a temporary operation
+            # Perform the interpolation (set to be linear)
+
+            
+            list_of_thicknesses = np.interp(pos_array,
+                                            base_array,
+                                            range_to_interpolate)
+            
+
+            # Assign the thicknesses to the variable
+            self.thickness:list = list_of_thicknesses
+
+
         
     def _generate_database_and_grid(self, crossing_wall=False):
         # Array stored node ids
@@ -172,16 +222,20 @@ class StarBoxMesh():
         self.grid = np.hstack((node_hist.reshape(np.size(self.database), 1), self.grid_pts))
         
         # Generate cells
-        self.cell = np.array([self.part_starting_id, self.node_starting_id + 1, self.node_starting_id, self.thickness])
+
+        ### NOTE: THIS IS A TEST TO CONTINUE DEBUGGING THE CODE
+        self.cell = np.array([self.part_starting_id, self.node_starting_id + 1, self.node_starting_id, self.thickness[0]])
+
+        ### PREVIOUS LINE TO BE REMOVED
         for i in range(1, np.size(self.grid_pts, 0) - 1):
             if np.mod(i, 2) == 1:
-                cell_row = np.array([self.part_starting_id + i, self.node_starting_id + i, self.node_starting_id + i + 1, self.thickness])
+                cell_row = np.array([self.part_starting_id + i, self.node_starting_id + i, self.node_starting_id + i + 1, self.thickness[0]])
             else:
-                cell_row = np.array([self.part_starting_id + i, self.node_starting_id + i + 1, self.node_starting_id + i, self.thickness])
+                cell_row = np.array([self.part_starting_id + i, self.node_starting_id + i + 1, self.node_starting_id + i, self.thickness[0]])
             self.cell = np.vstack((self.cell, cell_row))
         
         # Last row of cells
-        cell_row = np.array([self.part_starting_id + i + 1, self.node_starting_id + i + 1, self.node_starting_id, self.thickness])
+        cell_row = np.array([self.part_starting_id + i + 1, self.node_starting_id + i + 1, self.node_starting_id, self.thickness[0]])
         self.cell = np.vstack((self.cell, cell_row))
 
         # -- star box with crossing wall
@@ -198,7 +252,7 @@ class StarBoxMesh():
             for j in range(1,np.size(self.grid_pts,0)+1):
                 if np.mod(j,2) == 1:
                     cell_id += 1
-                    self.cell = np.vstack((self.cell,np.array([cell_id, node_hist[-1], self.node_starting_id+j, self.thickness])))
+                    self.cell = np.vstack((self.cell,np.array([cell_id, node_hist[-1], self.node_starting_id+j, self.thickness[0]])))
 
     def write_py_mesh_input(self): 
         """ 
