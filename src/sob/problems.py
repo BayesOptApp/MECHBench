@@ -1,7 +1,10 @@
 import os
 import pandas as pd
+from abc import ABC, abstractmethod
+from typing import List, Iterable, Union
 import shutil
 from .solver import run_radioss
+from .utils.solver_setup import RunnerOptions
 from .mesh import *
 from .fem import *
 
@@ -11,20 +14,37 @@ Remark: following phases are important
 1.  
 '''
 
-class OptiProblem():
-    '''
+
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+### THESE ARE CONSTANTS TO DETERMINE THE OUTPUTS (OBJECTIVES) OF THE PROBLEM
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+__PRINCIPAL_OUTPUTS:tuple = ("mass", "absorbed_energy","intrusion")
+__COMPOSITE_OUTPUTS:tuple = ("specific_energy","usage_ratio")
+
+class OptiProblem(ABC):
+    r'''
     The abstract of the structural optimization problem, with three subclass (three problem types)
     The instance is initialized by problem dimension, output data type, and the batch file path of the solver OpenRadioss. 
     The core idea is to generate a specific type of instance, input the variable array then output the evaluation of the desired data type like mass, intrusion, etc.
     The input variables should be in an universal search space, default (-5,5). For the evaluation those variables will be mapped to the real FEM problem space.
     '''
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
-        self.dimension = dimension
-        self.output_data = output_data
-        self.batch_file_path = batch_file_path
+    def __init__(self, dimension:int, output_data:Union[Iterable,str], runner_options:RunnerOptions,sequential_id_numbering:bool=True) -> None:
+        
+        
+        self.__dimension:int = dimension
+        self.__output_data:Union[Iterable,str] = output_data
+        self.__sequential_id_numbering:bool = sequential_id_numbering
+
+        # Assign the Properties to the case
+        self._runner_options = RunnerOptions(runner_options)
+
+        self._runner_options.complement()
+        self._runner_options.amend_integer_options(runner_options)
+
 
         # The attributes need to be overwritten in teh subclass
-        self.problem_id = None
+        self._problem_id:int = -1 
         self.variable_ranges = None # constraints of the problem
         self.input_file_name = None # input deck name
         self.output_file_name = None # output result name
@@ -40,6 +60,13 @@ class OptiProblem():
         
         # Universal design variable search space
         self.search_space = (-5.0, 5.0)
+
+        # TODO: This is a dummy variable for defining the simulation status:
+        #   0 -> Simulation not started
+        #   1 -> Just starter launched
+        #   2 -> Full simulation
+
+        self.sim_status:int = 0
 
     def _validate_variable_array(self, variable_array):
         """
@@ -79,6 +106,8 @@ class OptiProblem():
         return problem_space_variable
 
     def generate_input_deck(self, variable_array):
+        # Change the simulation status
+        self.sim_status = 0
         self._validate_variable_array(variable_array)
 
         fem_space_variable_array = [] # to get the variables in the FEM space
@@ -97,20 +126,40 @@ class OptiProblem():
         self._write_input_file(fem_space_variable_array)
         os.chdir(original_dir)
 
-        self.problem_id += 1 # update the problem id for the input deck generation
-        
+        if self.__sequential_id_numbering:
+            self.problem_id += 1 # update the problem id for the input deck generation
+    
+    @abstractmethod
     def _write_input_file(self, fem_space_variable_array):
-        raise NotImplementedError("Subclasses must implement _write_input_file method")
+        pass
     
     def run_simulation(self,runStarter=False):
         if self.input_file_name is None:
             raise ValueError("input_file_name must be provided or defined in the subclass.")
         # make problem id back to original, since it has been updated when generate_input_deck has been called
-        self.problem_id -= 1
+        if self.__sequential_id_numbering:
+            self.problem_id -= 1
+
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
         working_dir = os.path.join(os.getcwd(), dir_name)
         input_file_path = os.path.join(working_dir, self.input_file_name)
-        run_radioss(input_file_path, self.batch_file_path, runStarter=runStarter)
+
+        if runStarter:
+            # This is just one bypass in order to avoid setting MP settings
+            # for just the mass computation
+            run_radioss(input_file_path, 
+                        self.batch_file_path, 
+                        runStarter=runStarter,
+                        write_vtk=False,
+                        np_int=1,
+                        nt_int=1)
+        else:
+            run_radioss(input_file_path, 
+                        self.batch_file_path, 
+                        runStarter=runStarter,
+                        write_vtk=bool(self._runner_options('write_vtk')),
+                        np_int=self._runner_options('np'),
+                        nt_int=self._runner_options('nt'))
 
     def load_output_data_frame(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
@@ -119,8 +168,10 @@ class OptiProblem():
         output_file_path = os.path.join(working_dir, self.output_file_name)
         self.output_data_frame = pd.read_csv(output_file_path)
         self.output_data_frame.columns = self.output_data_frame.columns.str.replace(' ', '')
+        
         # update problem id again
-        self.problem_id += 1
+        if self.__sequential_id_numbering:
+            self.problem_id += 1
 
     def extract_mass_from_file(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
@@ -144,53 +195,265 @@ class OptiProblem():
 
         return ValueError("Mass value output failed!")  # Return None if the mass value wasn't found 
 
-    def __call__(self, variable_array):
-        self.generate_input_deck(variable_array)
-        if self.output_data == 'mass':
-            self.run_simulation(runStarter=True)
-            result = self.extract_mass_from_file() - self.model.rigid_mass
-            self.problem_id += 1
-        elif self.output_data == 'absorbed_energy':
-            result = self.model.absorbed_energy()
-        elif self.output_data == 'intrusion':
-            self.run_simulation()
-            self.load_output_data_frame()
-            matching_columns = [col for col in self.output_data_frame.columns if self.track_node_key in col]
-            max_z = max(self.output_data_frame[matching_columns[2]], key=abs)
+    def __call__(self, variable_array:list, problem_id:int=-1)->Union[float,List[float]]:
+        
+        # This is a force fork to make sure the problem_id is well set
+        if not self.__sequential_id_numbering:
+            self.problem_id = problem_id
+        
+        ## --------------------------------------------
+        ## TODO: These functions are just to be recycled
+        ## --------------------------------------------
+
+        def mass_calculation(obj_:OptiProblem)->float:
+            if obj_.sim_status < 1: 
+                obj_.run_simulation(runStarter=True)
+                # Change the status
+                obj_.sim_status = 1
+
+            val:float = obj_.extract_mass_from_file() - obj_.model.rigid_mass
+
+            if self.__sequential_id_numbering:
+                obj_.problem_id +=1  
+
+            return val
+
+        def absorbed_energy_calculation(obj_:OptiProblem)->float:
+            return obj_.model.absorbed_energy()
+        
+        def instrusion_calculation(obj_:OptiProblem)->float:
+            obj_.run_simulation()
+            obj_.load_output_data_frame()
+            matching_columns = [col for col in obj_.output_data_frame.columns if obj_.track_node_key in col]
+            max_z:float = max(obj_.output_data_frame[matching_columns[2]], key=abs)
+
+            # Change the sim status
+            self.sim_status = 2
             return abs(max_z)
+
+        # This line is everpresent...
+        # First generate all the input deck for OpenRadioss
+        self.generate_input_deck(variable_array)
+
+        # This structure just checks if the kind of output data is a string
+        # or lone variable
+        if isinstance(self.output_data,str):
+            if self.output_data == 'mass':
+                result = mass_calculation(self)
+            elif self.output_data == 'absorbed_energy':
+                result = absorbed_energy_calculation(self)
+            elif self.output_data == 'intrusion':
+                result = instrusion_calculation(self)
+            elif self.output_data == 'specific_energy':
+                # Compute first the absorbed energy
+                abs_ene:float = absorbed_energy_calculation(self)
+
+                # Compute the mass
+                mass:float = mass_calculation(self)
+
+                result = abs_ene/mass       
+            else:
+                result = np.nan
+        elif isinstance(self.output_data,list):
+
+            resp_arr = list()
+            looping_array = self.output_data.copy()
+            idx:int = -1
+
+
+            # Check is intrusion is in the list
+            if 'intrusion' in self.output_data:
+                # Get the position of "instrusion" in the array
+                idx:int = self.output_data.index('intrusion')
+
+                looping_array.pop(idx)
+            
+            # Now loop the calculations 
+            for out_ in looping_array:
+                if out_ == 'mass':
+                    resp_arr.append( mass_calculation(self) )
+                elif out_ == 'absorbed_energy':
+                    resp_arr.append( absorbed_energy_calculation(self) )
+                elif out_ == 'specific_energy':
+                    # Compute first the absorbed energy
+                    abs_ene:float = absorbed_energy_calculation(self)
+
+                    # Compute the mass
+                    mass:float = mass_calculation(self)
+
+                    resp_arr.append( abs_ene/mass )      
+                else:
+                    resp_arr.append( np.nan )
+
+            if idx !=-1:
+                # Append
+                # perform the intrusion calculation first
+                instrusion_calc = instrusion_calculation(self)
+                resp_arr.insert( idx,instrusion_calc)
+
+            return resp_arr
+            
+            
         else:
             result = None
         
-        return result        
+        return result
+
+    @property
+    def problem_id(self)->int:
+        return self._problem_id
+    
+    @property
+    def dimension(self)->int:
+        return self.__dimension
+    
+    @property
+    def batch_file_path(self)->str:
+        return self._runner_options('open_radioss_main_path')
+    
+    @property
+    def output_data(self)->Union[List[str],str]:
+        return self.__output_data
+    
+    @property
+    def sequential_id_numbering(self):
+        return self.__sequential_id_numbering
+    
+
+    @problem_id.setter
+    def problem_id(self,new_problem_id:int)->None:
+        
+        if not isinstance(new_problem_id,int):
+            raise TypeError("The type of the object is not correct")
+        
+        else:
+            if new_problem_id <= 0:
+                raise ValueError("The value must be greater than 0")
+            # Assign the new problem ID
+            self._problem_id = new_problem_id
+    
+
+    @output_data.setter
+    def output_data(self, new_output_data:Union[Iterable,str])->None:
+        #self.__output_data = new_output_data
+
+        # CASE 1: Check the output data is a string
+        if isinstance(new_output_data,str):
+            if ((new_output_data.strip().lower() in __COMPOSITE_OUTPUTS) or 
+                (new_output_data.strip().lower() in __PRINCIPAL_OUTPUTS)):
+                # Assign
+                self.__output_data = new_output_data
+            else:
+                raise ValueError("The output data is not defined as an output")
+        elif isinstance(new_output_data,(list,List[str])):
+            # Loop all over the elements and check the elements are part 
+            # of the defined group of outputs
+
+            idx_to_remove = []
+            for idx, elem in enumerate(new_output_data):
+
+                try:
+                    if not ((elem.strip().lower() in __COMPOSITE_OUTPUTS) or 
+                    (elem.strip().lower() in __PRINCIPAL_OUTPUTS)):
+                        idx_to_remove.append(idx)
+                except Exception as e:
+                    print("The list of output data is not correctly set as a list of strings")
+            
+
+            for idx in idx_to_remove:
+                try:
+                    new_output_data.pop(idx)
+                except IndexError as e:
+                    print("The output data is empty")
+                except Exception as e:
+                    print("Something else happened...")
+                
+            
+            # Now try to set the output data
+            self.__output_data = new_output_data
+                    
+
+    
+    # @batch_file_path.deleter
+    # def batch_file_path(self)->None:
+    #     del self.__batch_file_path
+    
+    @output_data.deleter
+    def output_data(self)->None:
+        del self.__output_data
+
+
 
 
 class StarBox(OptiProblem):
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
-        super().__init__(dimension, output_data, batch_file_path)
+
+    def __init__(self, 
+                 dimension, 
+                 output_data, 
+                 runner_options:RunnerOptions,
+                 sequential_id_numbering:bool,**kwargs) -> None:
+        
+        super().__init__(dimension, 
+                         output_data, 
+                         runner_options,
+                         sequential_id_numbering)
         # 1 -> square
         # 2 -> rectangular
         # 3 -> rectangular with varying thickness
         # 4 -> star shape
         # 5 -> star shape with varying thickness
-        variable_ranges_map = {
-            1: [(60, 120)],
-            2: [(60, 120), (60, 120)],
-            3: [(60, 120), (60, 120), (0.7, 3)],
-            4: [(60, 120), (60, 120), (0, 30), (0, 30)],
-            5: [(60, 120), (60, 120), (0, 30), (0, 30), (0.7, 3)]
-        }
-        self.variable_ranges = variable_ranges_map[self.dimension]
+        
+        self.variable_ranges = self._generate_variable_ranges_map(self.dimension)
         self.input_file_name = 'combine.k'
         self.output_file_name = 'combineT01.csv'
         self.starter_out_file_name = 'combine_0000.out'
         self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
 
-        self.problem_id = StarBox.instance_counter
-        StarBox.instance_counter+=1
+        if self.sequential_id_numbering:
+            self.problem_id = StarBox.instance_counter
+            StarBox.instance_counter+=1
+    
+    @staticmethod
+    def _generate_variable_ranges_map(dimension:int)->List[tuple]:
+        r"""
+        Generates the ranges map given a dimensionality; This is a 
+        static method, which is provided with the class to call methods
+        outsude the framework.
+
+        Args
+        ----------------------
+        - dimension: `int`: An integer denoting the dimensionality set by the user
+
+        Returns
+        ----------------------
+        - `List[tuple]`: A list of tuples indicating the physical ranges of the problem.
+        """
+
+        variable_ranges_map = {
+        1: [(60, 120)],
+        2: [(60, 120), (60, 120)],
+        3: [(60, 120), (60, 120), (0.7, 3)],
+        4: [(60, 120), (60, 120), (0, 30), (0, 30)],
+        5: [(60, 120), (60, 120), (0, 30), (0, 30), (0.7, 3)] 
+                        }
+        
+        if dimension > 0 and dimension<=5:
+         
+            return variable_ranges_map[dimension]
+        
+        else:
+            base_ranges:List[tuple] = variable_ranges_map[5]
+
+            for _ in range(dimension-5):
+                base_ranges.append((0.7,3))
+            
+            return base_ranges
+
 
     def _write_input_file(self, fem_space_variable_array):
-        self.mesh = StarBoxMesh(fem_space_variable_array) 
+        self.mesh = StarBoxMesh(fem_space_variable_array,
+                                h_level=self._runner_options('h_level')) 
         self.model = StarBoxModel(self.mesh)
         self.model.write_input_files()
     
@@ -201,8 +464,12 @@ class ThreePointBending(OptiProblem):
     The key process involves extracting the section of the input file related to thickness, modifying it, and merging it back with the original input to generate a new starter file.
     '''
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
-        super().__init__(dimension, output_data, batch_file_path)
+    def __init__(self, 
+                 dimension, 
+                 output_data, 
+                 runner_options:RunnerOptions,
+                 sequential_id_numbering:bool) -> None:
+        super().__init__(dimension, output_data, runner_options,sequential_id_numbering)
         # 1 -> all 5 shell thickness vary with same value. 
         # 2 -> only first and the last shell thickness vary, other fixed with middle value. 
         # 3 -> the first, middle, and last shell thickness vary. 
@@ -222,8 +489,9 @@ class ThreePointBending(OptiProblem):
         self.starter_out_file_name = 'ThreePointBending_0000.out'
         self.track_node_key = 'intrusionTrack44721' # the key of the intrusion in the output csv file
 
-        self.problem_id = ThreePointBending.instance_counter
-        ThreePointBending.instance_counter+=1
+        if self.sequential_id_numbering:
+            self.problem_id = ThreePointBending.instance_counter
+            ThreePointBending.instance_counter+=1
 
     def generate_input_deck(self, variable_array):
         '''
@@ -254,7 +522,9 @@ class ThreePointBending(OptiProblem):
         self._write_input_file(thickness_array)
         os.chdir(original_dir)
 
-        self.problem_id += 1 # update the problem id for the input deck generation
+        if self.sequential_id_numbering:
+            self.problem_id = ThreePointBending.instance_counter
+            ThreePointBending.instance_counter+=1
 
     def _copy_files_to_deck(self):
         # Get the path to the lib directory relative to the current file
@@ -284,8 +554,10 @@ class ThreePointBending(OptiProblem):
 
 class CrashTube(OptiProblem):
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path) -> None:
-        super().__init__(dimension, output_data, batch_file_path)
+    def __init__(self, dimension, output_data, 
+                 runner_options:RunnerOptions,
+                 sequential_id_numbering:bool) -> None:
+        super().__init__(dimension, output_data, runner_options ,sequential_id_numbering)
         # 2 -> three positions and depths vary together with same value. 
         # 3 -> all three trigger positions fixed, the three trigger depth vary. 
         # 4 -> except for middle trigger position and depth, other 4 vary ().
@@ -304,10 +576,12 @@ class CrashTube(OptiProblem):
         self.starter_out_file_name = 'combine_0000.out'
         self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
 
-        self.problem_id = CrashTube.instance_counter
-        CrashTube.instance_counter+=1
+        if self.sequential_id_numbering:
+            self.problem_id = CrashTube.instance_counter
+            CrashTube.instance_counter+=1
 
     def _write_input_file(self, fem_space_variable_array):
-        self.mesh = CrashTubeMesh(fem_space_variable_array) 
+        self.mesh = CrashTubeMesh(fem_space_variable_array,
+                                  h_level=self._runner_options('h_level')) 
         self.model = CrashTubeModel(self.mesh)
         self.model.write_input_files()

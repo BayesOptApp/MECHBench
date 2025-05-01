@@ -1,6 +1,12 @@
 from .problems import *
+from.utils.solver_setup import RunnerOptions
+from typing import Optional, Iterable, Union
 
-def get_problem(model_type, dimension, output_data, batch_file_path):
+def get_problem(model_type:int, 
+                dimension:int, 
+                output_data:Union[Iterable,str], 
+                runner_options:RunnerOptions, 
+                sequential_id_numbering:bool=True,**kwargs):
     '''
     Generates a problem instance based on the specified model type and configuration.
 
@@ -20,6 +26,7 @@ def get_problem(model_type, dimension, output_data, batch_file_path):
             - 3: Rectangular with varying thickness
             - 4: Star shape
             - 5: Star shape with varying thickness
+            - 6-35: Star shape with different thickness profiles.
         
         - For model_type = 2 (Three point bending model):
             - 1: All 5 shell thicknesses vary with the same value.
@@ -40,18 +47,19 @@ def get_problem(model_type, dimension, output_data, batch_file_path):
         - 'mass'
         - 'absorbed_energy'
         - 'intrusion' (Requires running FEM simulation while 'mass' and 'absorbed_energy' do not require one.)
+        - 'specific-energy' (Computes the SEA by operating the mass and absorbed energy)
 
-    batch_file_path : str
+    runner_options : `RunnerOptions`
         Path to the OpenRadioss batch file.
     '''
     if model_type==1:
-        problem_instance = StarBox(dimension, output_data, batch_file_path)
+        problem_instance = StarBox(dimension, output_data, runner_options,sequential_id_numbering,**kwargs)
         return problem_instance
     elif model_type==2:
-        problem_instance = ThreePointBending(dimension, output_data, batch_file_path)
+        problem_instance = ThreePointBending(dimension, output_data, runner_options,sequential_id_numbering)
         return problem_instance
     elif model_type==3:
-        problem_instance = CrashTube(dimension, output_data, batch_file_path)
+        problem_instance = CrashTube(dimension, output_data, runner_options,sequential_id_numbering)
         return problem_instance
     else:
         raise ValueError('Invalid model type')
