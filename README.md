@@ -22,9 +22,10 @@ The project is structured as follows:
       - `run_openradoss`: Module which contains the class `RunOpenRadioss` which generates the commands to run OpenRadioss as well as external executables (`TH_TO_CSV`,`ANIM_TO_VTK`).
       - `solver_setup`: Contains the class `RunnerOptions`, which is an extension of a dictionary to set up the runs. The required keys of the dictionary to set up the cases are contained there.
   - `lib/`: A directory containing supplementary files and libraries.
-      - `py_mesh.py`: A file with functions related to mesh generation (for starbox model). **Soon to be deprecated**
+      - `py_mesh.py`: A file with functions related to mesh generation (for starbox model). **Deprecated**
       - `py_mesh_v2.py`: Modified version of py_mesh_v2, trigger generation variables added (for crash tube model). **Soon to be deprecated**
-      - 
+      - `gmsh_base_meshes.py`: Contains a template or base class to generate objects that when used the `__call__` method, then a mesh by using GMSH framework is generated.
+      - `starbox_gmsh.py`: A file with functions related to mesh generation (for starbox model) with GMSH framework.
 
 ## Instructions for Running OpenRadioss Solver
 1. You should have OpenRadioss installed. About how to install it, see: https://github.com/OpenRadioss/OpenRadioss/blob/main/INSTALL.md. There's also an official YouTube video for building it from sourse code: https://www.youtube.com/watch?v=ddvH2CNfaYg&list=LL&index=4
