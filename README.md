@@ -28,8 +28,9 @@ The project is structured as follows:
       - `starbox_gmsh.py`: A file with functions related to mesh generation (for starbox model) with GMSH framework.
 
 ## Instructions for Running OpenRadioss Solver
-1. You should have OpenRadioss installed. About how to install it, see: https://github.com/OpenRadioss/OpenRadioss/blob/main/INSTALL.md. There's also an official YouTube video for building it from sourse code: https://www.youtube.com/watch?v=ddvH2CNfaYg&list=LL&index=4
-2. In order to run the OpenRadioss solver within the module, make sure to have the job submission tool folder downloaded in the root directory of your OpenRadioss installation. You can obtain this folder from the webpage: https://openradioss.atlassian.net/wiki/spaces/OPENRADIOSS/pages/58785793/Latest+gui+scripts
+1. You should have OpenRadioss installed. About how to install it, see: https://github.com/OpenRadioss/OpenRadioss/blob/main/INSTALL.md. There's also an official YouTube video for building it from sourse code: https://www.youtube.com/watch?v=ddvH2CNfaYg&list=LL&index=4. You can either download the stable version or build the binaries yourself. You should have the tools `TH_TO_CSV` and `ANIM_TO_VTK` in the directory *../OpenRadioss/exec* as well as the starter and engine executables.
+2. In the `main,py`, you should point the path to the OpenRadioss directory in order to run the code.
+3. Have fun.
 
 ## Contact constributors
 - Maria Laura Santoni
