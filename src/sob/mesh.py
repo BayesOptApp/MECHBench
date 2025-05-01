@@ -269,15 +269,18 @@ class StarBoxMesh(AbstractMeshSettings):
 
         elif self.dimension >5 and self.dimension <= 35:
             # Set some arrays which will be interpolated
-            base_array = np.linspace(0.0,
-                                     self.extrusion_length,
+
+            init_pos = self.elsize/2/2**(self.h_level-1)
+
+
+            base_array = np.linspace(init_pos,self.extrusion_length-init_pos,
                                      num=self.dimension-4,
                                      endpoint=True)
             
             range_to_interpolate = self.variable_array[4:]
 
 
-            init_pos = self.elsize/2/2**(self.h_level-1)
+            
             # List of positions
             pos_array = np.linspace(init_pos,self.extrusion_length-init_pos,
                                     num=self.num_layers,endpoint=True)
