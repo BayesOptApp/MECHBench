@@ -20,6 +20,7 @@ The project is structured as follows:
   - `post_processing.py`: Provides tools for post-processing FEM simulation results.
   - `utils/`: A directory containing utilities for setting up the simulations.
       - `run_openradoss`: Module which contains the class `RunOpenRadioss` which generates the commands to run OpenRadioss as well as external executables (`TH_TO_CSV`,`ANIM_TO_VTK`).
+      - `solver_setup`: Contains the class `RunnerOptions`, which is an extension of a dictionary to set up the runs. The required keys of the dictionary to set up the cases are contained there.
   - `lib/`: A directory containing supplementary files and libraries.
       - `py_mesh.py`: A file with functions related to mesh generation (for starbox model). **Soon to be deprecated**
       - `py_mesh_v2.py`: Modified version of py_mesh_v2, trigger generation variables added (for crash tube model). **Soon to be deprecated**
