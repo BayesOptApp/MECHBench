@@ -16,11 +16,14 @@ The project is structured as follows:
   - `problems.py`: Defines optimization problem classes.
   - `fem.py`: Implements finite element analysis functionality.
   - `mesh.py`: Handles mesh generation and manipulation.
-  - `solver.py`: OpenRadioss.
+  - `solver.py`: A function to perform calls to OpenRadioss (starter and engine)
   - `post_processing.py`: Provides tools for post-processing FEM simulation results.
+  - `utils/`: A directory containing utilities for setting up the simulations.
+      - `run_openradoss`: Module which contains the class `RunOpenRadioss` which generates the commands to run OpenRadioss as well as external executables (`TH_TO_CSV`,`ANIM_TO_VTK`).
   - `lib/`: A directory containing supplementary files and libraries.
-      - `py_mesh.py`: A file with functions related to mesh generation (for starbox model).
-      - `py_mesh_v2.py`: Modified version of py_mesh_v2, trigger generation variables added (for crash tube model).
+      - `py_mesh.py`: A file with functions related to mesh generation (for starbox model). **Soon to be deprecated**
+      - `py_mesh_v2.py`: Modified version of py_mesh_v2, trigger generation variables added (for crash tube model). **Soon to be deprecated**
+      - 
 
 ## Instructions for Running OpenRadioss Solver
 1. You should have OpenRadioss installed. About how to install it, see: https://github.com/OpenRadioss/OpenRadioss/blob/main/INSTALL.md. There's also an official YouTube video for building it from sourse code: https://www.youtube.com/watch?v=ddvH2CNfaYg&list=LL&index=4
