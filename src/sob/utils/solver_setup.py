@@ -13,10 +13,13 @@ from collections import namedtuple, OrderedDict
 def setup_default_options_(
         open_radioss_main_path='/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/Tools/openradioss_gui'\
                         '# or any path which may exist',
-        write_vtk='False # or True if you need to generate the vtk files of the simulation',
+        write_vtk='0 # or 1 if you need to generate the vtk files of the simulation',
         h_level = '1 # Set integers given a mesh refinement level',
         nt = '1 # Set integers as number of threads in the case',
         np = '1 # Set integers as number of processors in the case',
+        save_mesh_vtk = '0 # or 1 if you want GMSH/mesher to save an extra file with the generated mesh'+\
+                        'as a vtk file'
+        
         
 ):
     r"""
@@ -38,7 +41,7 @@ def safe_str(s, known_words:dict=None):
     with `eval` afterwards.
 
     """
-    safe_chars = ' 0123456789.,+-*()[]e<>='
+    safe_chars = ' 0123456789.,+-*()[]e<>=/\\'
     if s != str(s):
         return str(s)
     if not known_words:
@@ -247,7 +250,7 @@ class RunnerOptions(dict):
         """
         self.check()
         if defaults is None:
-            defaults = _default_options()
+            defaults = _default_options
         # TODO: this needs rather the parameter N instead of loc
         # if 'N' in loc:  # TODO: __init__ of CMA can be simplified
         #     popsize = self('popsize', defaults['popsize'], loc)
@@ -276,6 +279,18 @@ class RunnerOptions(dict):
     def amend_integer_options(self, inopts:dict):
         if inopts.get('h_level') in (None, _default_options['h_level']):
             self['h_level'] = 1
+        else:
+            self['h_level'] = int(inopts.get('h_level'))
+        
+        if inopts.get('nt') in (None, _default_options['nt']):
+            self['nt'] = 1
+        else:
+            self['nt'] = int(inopts.get('nt'))
+        
+        if inopts.get('np') in (None, _default_options['np']):
+            self['np'] = 1
+        else:
+            self['np'] = int(inopts.get('np'))
 
     def __call__(self, key, default=None, loc=None):
         """evaluate and return the value of option `key` on the fly, or

@@ -1,11 +1,84 @@
 import numpy as np
 import os
-
+from abc import ABC, abstractmethod
 from .lib.py_mesh import py_mesh
 from .lib.py_mesh_v2 import py_mesh_v2
+from .lib.starbox_gmsh import Starbox_GMSH
+import json
 
-class StarBoxMesh():
-    def __init__(self, variable_array, crossing_wall=False, **kwargs) -> None:
+
+
+class AbstractMeshSettings(ABC):
+    r"""
+    This is an abstract definition for the mesher settings
+    """
+
+    @abstractmethod
+    def __init__(self, variable_array, h_level,**kwargs)->None:
+        """
+        Actual class initializer
+        """
+        pass
+
+    @abstractmethod
+    def volume(self)->float:
+        r"""Returns the volume (in object units) of the structural object.       
+        """
+        pass
+
+    @abstractmethod
+    def write_mesh_file(self)->None:
+        r"""
+        Writes the mesh file for the simulator (LS-Dyna/OpenRadioss)
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def characteristic_length(self)->None:
+        r"""
+        Return the characteristic length of the structure. This is a property to set up
+        computations of other Crashworthiness Objective metrics. Namely, for future additions,
+        the characteristic length is the length of the structure in the direction of the impact.
+        """
+        pass
+
+    @property
+    def h_level(self)->int:
+        r"""
+        Mesh refinement level
+        """
+        return self.__h_level
+    
+    @h_level.setter
+    def h_level(self,new_h_level:int)->None:
+        r"""
+        Mesh refinement setter
+
+        Args
+        ----------------------
+        new_h_level (`int`): An integer defining the mesh refinement level
+        """
+
+        if isinstance(new_h_level,(int,float)) and int(new_h_level) >= 1:
+            # Set the h_level in this case
+            self.__h_level = int(new_h_level)
+        else:
+            raise ValueError("The mesh refinement level `h_level` must be a positive integer greater than 1.")
+
+class StarBoxMesh(AbstractMeshSettings):
+    def __init__(self, variable_array, h_level:int=1, crossing_wall=False, **kwargs) -> None:
+        r"""
+        Star-Box Mesh Initializer
+
+        Args
+        --------------------------
+        - variable_array (`list`): An array with the variable physical mapping
+        - h_level (`int`): Mesh Refinement level
+        - crossing_wall (`bool`): A switch to allow the wall to cross the material
+
+        """
+        self.h_level = h_level
         # Optimization problem parameters
         self.variable_array = variable_array
         self.dimension = len(variable_array)
@@ -17,7 +90,7 @@ class StarBoxMesh():
 
         # Default values for configuration parameters
         self.default_parameters = {
-            'thickness': [1.2],
+            'thickness': 1.2,
             'elsize': 4,
             'extrusion_length': 120,
             'node_starting_id': 1001,
@@ -29,7 +102,7 @@ class StarBoxMesh():
             'shrf': 0.83333,
             'mat_id': 999,
             'node_starting_id': 1001,
-            'part_starting_id': 101
+            'n_elements_side':12
         }
         self._set_parameters(**kwargs)
         self._generate_database_and_grid(crossing_wall)
@@ -44,7 +117,7 @@ class StarBoxMesh():
             result = perimeter*self.extrusion_length*self.thickness
         elif self.dimension > 5 and self.dimension < 36:
             # Divide the extrusion length into 30 parts
-            multiplier = self.extrusion_length/30
+            multiplier = self.extrusion_length/self.num_layers
             
             # Initialise the result to be 0.00
             result:float = 0.00
@@ -52,12 +125,15 @@ class StarBoxMesh():
             for ii in range(30):
                 result += multiplier*perimeter*self.thickness[ii]
 
-
-
-
-
-
         return result
+    
+    @property
+    def characteristic_length(self)->float:
+        r"""Returns the characteristic length of the StarBoxMesh,
+        namely the extrusion length.
+        """
+
+        return self.extrusion_length
 
     def _determine_grid_points(self):
         """
@@ -164,12 +240,17 @@ class StarBoxMesh():
         # Set default parameters
         for key, value in self.default_parameters.items():
             setattr(self, key, kwargs.get(key, value))
+        
+        
 
         if 'extrusion_length' in kwargs:
             self.extrusion_length = float(kwargs['extrusion_length'])
             self.extrusion_length = int(self.extrusion_length / self.elsize) * self.elsize
         else:
             self.extrusion_length = self.elsize * 30
+        
+        # Set the number of layers of the mesh
+        self.num_layers = 30*2**(self.h_level-1)
 
         if 'trigger_height' in kwargs:
             self.trigger_height = float(kwargs['trigger_height'])
@@ -177,13 +258,16 @@ class StarBoxMesh():
         else:
             self.trigger_rows = 3
 
+        temp_thickness = self.default_parameters['thickness']
+        self.thickness = []
+
         if self.dimension in [3, 5]:
-            self.thickness[0] = self.variable_array[-1]
+            self.thickness.append(self.variable_array[-1])
         
         elif self.dimension in [1,2,4]:
-            self.thickness[0] = self.thickness
+            self.thickness.append(temp_thickness)
 
-        elif self.dimension >=5 and self.dimension <= 35:
+        elif self.dimension >5 and self.dimension <= 35:
             # Set some arrays which will be interpolated
             base_array = np.linspace(0.0,
                                      self.extrusion_length,
@@ -192,12 +276,11 @@ class StarBoxMesh():
             
             range_to_interpolate = self.variable_array[4:]
 
-            # Instantiate a list of thicknesses and positions
-            #list_of_thicknesses = np.zeros((30,)).tolist()
 
+            init_pos = self.elsize/2/2**(self.h_level-1)
             # List of positions
-            pos_array = np.linspace(2,self.extrusion_length-2,
-                                    num=30,endpoint=True)
+            pos_array = np.linspace(init_pos,self.extrusion_length-init_pos,
+                                    num=self.num_layers,endpoint=True)
             
             # TODO: Modify interpolation // This is a temporary operation
             # Perform the interpolation (set to be linear)
@@ -205,7 +288,7 @@ class StarBoxMesh():
             
             list_of_thicknesses = np.interp(pos_array,
                                             base_array,
-                                            range_to_interpolate)
+                                            range_to_interpolate).tolist()
             
 
             # Assign the thicknesses to the variable
@@ -215,16 +298,23 @@ class StarBoxMesh():
         
     def _generate_database_and_grid(self, crossing_wall=False):
         # Array stored node ids
-        node_hist = np.array([i for i in range(self.node_starting_id, self.node_starting_id + np.size(self.grid_pts, 0))])
+        node_hist = np.array([i for i in range(self.node_starting_id, 
+                                               self.node_starting_id + 
+                                               np.size(self.grid_pts, 0))])
         self.database = node_hist
         
         # Stack two arrays horizontally
-        self.grid = np.hstack((node_hist.reshape(np.size(self.database), 1), self.grid_pts))
+        self.grid = np.hstack((node_hist.reshape(np.size(node_hist), 1), self.grid_pts))
         
         # Generate cells
 
         ### NOTE: THIS IS A TEST TO CONTINUE DEBUGGING THE CODE
-        self.cell = np.array([self.part_starting_id, self.node_starting_id + 1, self.node_starting_id, self.thickness[0]])
+        
+        self.cell = np.array([self.part_starting_id, 
+                                self.node_starting_id + 1, 
+                                self.node_starting_id, 
+                                np.asarray(self.thickness[0]).ravel()[0]])
+        
 
         ### PREVIOUS LINE TO BE REMOVED
         for i in range(1, np.size(self.grid_pts, 0) - 1):
@@ -320,13 +410,80 @@ class StarBoxMesh():
                             str(int(self.cell[i,1]))+',', str(int(self.cell[i,2]))+',',str(self.cell[i,3])))          
         inf.close()
 
+    def write_py_mesh_input_2(self):
+        # These would normally be computed or read from elsewhere
+        units = "kg mm ms kN GPa kN-mm"
+        extrusion_length = self.extrusion_length
+
+        id_min = self.id_min
+        trigger_depth = self.trigger_depth
+        trigger_rows = self.trigger_rows
+        mid = self.mat_id
+
+        # grid = [
+        #     {"gid": 1001, "x": 51.0, "y": 48.0},
+        #     {"gid": 1002, "x": 0.0, "y": 39.0},
+        #     {"gid": 1003, "x": -51.0, "y": 48.0},
+        #     {"gid": 1004, "x": -33.0, "y": 0.0},
+        #     {"gid": 1005, "x": -51.0, "y": -48.0},
+        #     {"gid": 1006, "x": 0.0, "y": -39.0},
+        #     {"gid": 1007, "x": 51.0, "y": -48.0},
+        #     {"gid": 1008, "x": 33.0, "y": 0.0}
+        # ]
+
+        grid = [{"gid": int(gid), "x": x, "y": y} for gid, x, y in zip(self.grid[:,0], 
+                                                                       self.grid[:,1], 
+                                                                       self.grid[:,2])]
+
+        if len(self.thickness)==1:
+            thick_array = [self.thickness[0]]*self.num_layers
+        else:
+            thick_array = self.thickness.copy()
+
+        cell = [{"cid": cid, "t": t} for cid, t in zip(range(self.part_starting_id, 
+                                                             self.part_starting_id + len(thick_array)), 
+                                                             thick_array)]
+
+        # Build the full data structure
+        data = {
+            "units": units,
+            "extrusion_length": extrusion_length,
+            "h_level":self.h_level,
+            "elform": self.elform,
+            "nip": self.nip,
+            "shrf": self.shrf,
+            "elsize": self.elsize,
+            "id_min": id_min,
+            "trigger_depth": trigger_depth,
+            "trigger_rows": trigger_rows,
+            "mid": mid,
+            "grid": grid,
+            "cell": cell,
+            "num_layers":self.num_layers,
+            'n_elements_side':self.n_elements_side
+        }
+
+        # Output JSON file
+        with open("py_mesh_input.json", "w") as f:
+            json.dump(data, f, indent=4)
+
     def write_mesh_file(self):
         # ---- running py_mesh
-        self.write_py_mesh_input()
-        py_mesh('py_mesh.input')
+        # if self.dimension <=5:
+        #     self.write_py_mesh_input()
+        #     py_mesh('py_mesh.input')
+        # else:
+        self.write_py_mesh_input_2()
+        cl = Starbox_GMSH("star_box_mesh")
+        cl("py_mesh_input.json",True)
         
-class CrashTubeMesh():
-    def __init__(self, variable_array, **kwargs) -> None:
+        
+class CrashTubeMesh(AbstractMeshSettings):
+    def __init__(self, variable_array, h_level:int=1, **kwargs) -> None:
+        
+        # Set the h_level
+        self.h_level = h_level
+        
         # Optimization problem parameters
         self.variable_array = variable_array
         self.dimension = len(variable_array)
@@ -365,6 +522,14 @@ class CrashTubeMesh():
         perimeter = np.sum(distances)
         result = perimeter*self.extrusion_length*self.thickness
         return result
+    
+    @property
+    def characteristic_length(self)->float:
+        r"""Returns the characteristic length of the CrashTubeMesh,
+        namely the extrusion length.
+        """
+
+        return self.extrusion_length
     
     def _determine_trigger_depths_and_position(self):
         '''
@@ -442,8 +607,190 @@ class CrashTubeMesh():
         else:
             self.trigger_rows = 3
 
-        if self.dimension in [3, 5]:
-            self.thickness = self.variable_array[-1]
+        # if self.dimension in [3, 5]:
+        #     self.thickness = self.variable_array[-1]
+        
+    def _generate_database_and_grid(self):
+        # Array stored node ids
+        node_hist = np.array([i for i in range(self.node_starting_id, self.node_starting_id + np.size(self.grid_pts, 0))])
+        self.database = node_hist
+        
+        # Stack two arrays horizontally
+        self.grid = np.hstack((node_hist.reshape(np.size(self.database), 1), self.grid_pts))
+        
+        # Generate cells
+        self.cell = np.array([self.part_starting_id, self.node_starting_id + 1, self.node_starting_id, self.thickness])
+        for i in range(1, np.size(self.grid_pts, 0) - 1):
+            if np.mod(i, 2) == 1:
+                cell_row = np.array([self.part_starting_id + i, self.node_starting_id + i, self.node_starting_id + i + 1, self.thickness])
+            else:
+                cell_row = np.array([self.part_starting_id + i, self.node_starting_id + i + 1, self.node_starting_id + i, self.thickness])
+            self.cell = np.vstack((self.cell, cell_row))
+        
+        # Last row of cells
+        cell_row = np.array([self.part_starting_id + i + 1, self.node_starting_id + i + 1, self.node_starting_id, self.thickness])
+        self.cell = np.vstack((self.cell, cell_row))
+
+
+    def write_py_mesh_input(self): 
+        """ 
+        writes py_mesh.input file 
+        
+        Inputs: 
+        element_size
+        element_form
+        intergration_points
+        element_shear_factor
+        extrusion_length
+        starting_id
+        trigger_depth
+        trigger_rows
+        material_id
+        database = node_hist
+
+        Outputs
+        
+        """  
+        adr = os.path.join(os.getcwd(),'py_mesh.input')
+        inf = open(adr,'w')
+        inf.writelines('#  units:' + self.units + '\n')
+        inf.writelines('\n# ----- height of the structure (i.e. extrusion length)\n')
+        inf.writelines('extrusion_length, %f\n' %self.extrusion_length)
+        # ----- element related
+        inf.writelines('\n# ----- element related\n')
+        inf.writelines('elform, %d\n' %self.elform)
+        inf.writelines('nip, %d\n' %self.nip)  
+        inf.writelines('shrf, %f\n' %self.shrf)   
+        inf.writelines('elsize, %f\n' %self.elsize) 
+        inf.writelines('\n# ----- The id number for the first node and shell\n')
+        inf.writelines('id_min, %d\n' %self.id_min)
+        # ----- trigger 
+        inf.writelines('\n# ----- Trigger\n')
+        inf.writelines('trigger_rows, %d\n' %self.trigger_rows)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #  added for trigger variables (Li)
+        trigger_positions_str = 'trigger_positions, ' + ', '.join(map(str, self.trigger_positions))
+        inf.writelines(f'{trigger_positions_str}\n')
+        trigger_depths_str = 'trigger_depths, ' + ', '.join(map(str, self.trigger_depths))
+        inf.writelines(f'{trigger_depths_str}\n')
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        inf.writelines('\n')  
+        for i in range(len(self.cell[:,0])):
+            inf.writelines('trigger, %d\n' %self.cell[i,0])
+        # ----- material id
+        inf.writelines('\n# ----- Material id\n')
+        inf.writelines('mid, %d\n' %self.mat_id)
+        # ----- writing database history node
+        inf.writelines('\n# ----- Define a *DATABASE_HISTORY_NODE keyword\n')
+        for i in range(len(self.database)):
+            inf.writelines('database, %d\n' %self.database[i])     
+        # ----- writing a grid
+        inf.writelines('\n# ----- Define nodes that define the geometry\n')  
+        max_grid_id = len(str(int(np.max(self.grid[:,0]))))  #grid_?
+        str_grd_title = "{:>5}{:>"+str(max_grid_id+2)+"}{:>17}{:>16}\n"
+        inf.writelines(str_grd_title.format('#   ,','gid,', 'x,', 'y'))
+        str_grd = "{:>4}{:>"+str(max_grid_id+2)+"}{:>17}{:>16}\n"
+        for i in range(np.size(self.grid,0)):
+            inf.writelines(str_grd .format('grid,',str(int(self.grid[i,0]))+',',
+                            str(int(self.grid[i,1]))+',', str(int(self.grid[i,2])))) #grid_?
+        # ----- writing cells
+        inf.writelines('\n# ----- Define parts') 
+        max_cell_id = len(str(int(np.max(self.cell[:,0]))))
+        str_cell_title = "{:>5}{:>"+str(max_cell_id+3)+"}{:>17}{:>16}{:>16}\n"  
+        inf.writelines(str_cell_title.format('\n#   ,','cid,','g0,','g1,','t')) 
+        str_cell = "{:>4}{:>"+str(max_cell_id+3)+"}{:>17}{:>16}{:>16}\n"
+        for i in range(np.size(self.cell,0)):
+            inf.writelines(str_cell.format('cell,',str(int(self.cell[i,0]))+',',
+                            str(int(self.cell[i,1]))+',', str(int(self.cell[i,2]))+',',str(self.cell[i,3])))          
+        inf.close()
+
+    def write_mesh_file(self):
+        # ---- running py_mesh
+        self.write_py_mesh_input()
+        py_mesh_v2('py_mesh.input')
+
+
+
+class ThreePointBendingMesh(AbstractMeshSettings):
+    def __init__(self, variable_array, h_level:int=1, **kwargs) -> None:
+         # Set the h_level
+        self.h_level = h_level
+        
+        # Optimization problem parameters
+        self.variable_array = variable_array
+        self.dimension = len(variable_array)
+
+        self.units =  '  kg  mm  ms  kN  GPa  kN-mm'
+        
+        # Default values for configuration parameters
+        self.default_parameters = {
+            'thickness': 1.2,
+            'elsize': 4,
+            'extrusion_length': 800,
+            'node_starting_id': 1001,
+            'part_starting_id': 101,
+            'id_min': 1000001,
+            'elform': 2,
+            'nip': 5,
+            'shrf': 0.83333,
+            'mat_id': 999,
+            'node_starting_id': 1001,
+            'part_starting_id': 101,
+            'mid_point_node':44721
+        }
+        self._set_parameters(**kwargs)
+        self._generate_database_and_grid()
+
+        # size of the Tube with Layers
+        length = 120 / 2
+        width = 80 / 2
+        self.grid_pts = np.array([[-length, width], [length, width],
+                                    [length, -width], [-length, -width]])
+        
+    def volume(self):
+        # Calculate the distance between consecutive vertices
+        distances = np.linalg.norm(np.diff(self.grid_pts, axis=0, append=[self.grid_pts[0]]), axis=1)
+        # Sum the distances to get the perimeter
+        perimeter = np.sum(distances)
+        result = perimeter*self.extrusion_length*self.thickness
+        return result
+    
+    @property
+    def characteristic_length(self)->float:
+        r"""Returns the characteristic length of the CrashTubeMesh,
+        namely the extrusion length.
+        """
+
+        return self.extrusion_length
+            
+    
+    def _set_parameters(self, **kwargs):
+        """
+        Set parameters for the star box model based on the provided keyword arguments.
+
+        This method dynamically adds attributes to the instance of the class based on the key-value pairs provided
+        as keyword arguments (kwargs). It also sets default values for parameters not provided in kwargs.
+
+        Parameters:
+            **kwargs (dict): Keyword arguments to set parameters for the star box model.
+
+        Notes:
+            - If a parameter is provided in kwargs, it overrides the default value.
+            - If 'extrusion_length' is provided in kwargs, it sets the extrusion length of the star box model.
+            Otherwise, it sets the extrusion length to 30 times the element size (elsize).
+            - If 'trigger_height' is provided in kwargs, it sets the trigger height of the star box model and
+            calculates the number of trigger rows based on the provided trigger height and element size (elsize).
+            Otherwise, it sets the trigger rows to 3.
+            - If the star box model is 3D or 5D, it sets the thickness based on the last value in the variable array.
+
+        """
+        # Set parameters dynamically based on kwargs
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        # Set default parameters
+        for key, value in self.default_parameters.items():
+            setattr(self, key, kwargs.get(key, value))
+
         
     def _generate_database_and_grid(self):
         # Array stored node ids

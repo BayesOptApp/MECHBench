@@ -7,43 +7,24 @@ from typing import Union
 from .utils.run_openradioss import RunOpenRadioss
 
 
-
-
-def determine_batch_file_path_type(batch_file_path:Union[str,Path])->list:
-    r"""
-    This function is written in order to define the command line to run the case
-
-    Args:
-    --------------
-    - batch_file_path (`Union[str,Path]`): A batch_file path to set the OpenRadioss run
-    """
-
-    # Convert the file path to a path
-    # NOTE: This handle is meant for UNIX
-    if isinstance(batch_file_path,str):
-        batch_file_path = Path(batch_file_path)
-    
-
-
 def run_radioss(input_file_path:Union[str,Path], 
                 batch_file_path:Union[str,Path], 
                 write_vtk:bool= True, 
                 write_csv:bool = True, 
                 runStarter:bool = False,
-                d3plot:bool=False):
+                d3plot:bool=False,
+                nt_int:int = 1,
+                np_int:int = 1):
     
     # TODO: This is an input line to get the number ofcores available to run
     
-    #if os.cpu_count() > 1: nt = str(int(os.cpu_count()/2))
-    #if os.cpu_count() > 1: nt = str(8)
-    #else: nt="1"
 
-    nt = "1"
+    nt = str(nt_int)
 
     # Get the directory of the folder storing the deck files
     curdir = os.path.dirname(input_file_path)
 
-    np = "4"
+    np = str(np_int)
 
     #######
     # ------------- WARNING ----------------------
@@ -71,21 +52,6 @@ def run_radioss(input_file_path:Union[str,Path],
         d3_plot_option = "yes"
     else:
         d3_plot_option = "no"
-
-    # Construct the command to run the batch file with arguments
-    # command = [
-    #     "python3", # Additional setup to call the Python3 Setup
-    #     batch_file_path,
-    #     input_file_path, # %1
-    #     nt, # %2
-    #     np, # %3
-    #     sp, # %4
-    #     vtk_option, # %5
-    #     csv_option, # %6
-    #     starter_option, # %7,
-    #     d3_plot_option # TODO: This is for the 3d plot option which is not considered
-    # ]
-
     
     command = [
         input_file_path, # %1
@@ -126,7 +92,7 @@ def run_radioss(input_file_path:Union[str,Path],
     # ======================================
     # run the engine
     # ======================================
-    if starter_option == 'no':
+    if not runStarter:
         # Get the files which are part of the engine
         engine_list = run_env.get_engine_input_file_list()
 
@@ -145,24 +111,24 @@ def run_radioss(input_file_path:Union[str,Path],
 
 
 
-    # ======================================
-    # Convert to TH
-    # ======================================
+        # ======================================
+        # Convert to TH
+        # ======================================
 
-    th_list = run_env.get_th_list()
+        th_list = run_env.get_th_list()
 
-    for i_th_file in th_list:
-        run_env.convert_th_to_csv(i_th_file)
+        for i_th_file in th_list:
+            run_env.convert_th_to_csv(i_th_file)
 
-    # ======================================
-    # Convert to VTK
-    # ======================================
+        # ======================================
+        # Convert to VTK
+        # ======================================
 
-    if vtk_option:
+        if write_vtk:
 
-        vtk_list = run_env.get_animation_list()
+            vtk_list = run_env.get_animation_list()
 
-        for i_anim_file in vtk_list:
-            run_env.convert_anim_to_vtk(i_anim_file)
+            for i_anim_file in vtk_list:
+                run_env.convert_anim_to_vtk(i_anim_file)
         
 

@@ -1,8 +1,74 @@
 import os
 import numpy as np
-from .mesh import *
+from .mesh import StarBoxMesh,CrashTubeMesh
+from abc import ABC, abstractmethod
 
-class StarBoxModel():
+
+class AbstractModel(ABC):
+    r"""
+    This is a class used to define the methods and properties of
+    the Setup Cards for each of the methods
+    """
+
+    @abstractmethod
+    def __init__(self, mesh, **kwargs)->None:
+        pass
+    
+    # @abstractmethod
+    # def write_mesh_file(self):
+    #     r"""
+    #     A method to activate writing the Mesh part of the Simulation Card
+    #     for either OpenRadioss or LS-Dyna defined cards
+    #     """
+    #     pass
+    
+    # @abstractmethod
+    # def _load_impactor(self):
+    #     r"""
+    #     Loads the impactor properties
+    #     """
+    #     pass
+    
+    @abstractmethod
+    def absorbed_energy(self):
+        # initial kinetic energy
+        pass
+
+    
+    @property
+    def mesh(self)->object:
+        r"""
+        Returns the mesh object linked to the model
+        """
+        return self._mesh
+    
+    @mesh.setter
+    def mesh(self, new_mesh:object)->None:
+        r"""
+        Sets a new mesh object by parameter
+        """
+        self._mesh = new_mesh
+    
+    @property
+    @abstractmethod
+    def material_card_type(self)->str:
+        r"""
+        Determines the material card type (OpenRadioss, LS-Dyna)
+        """
+        pass
+
+
+    # @property
+    # def units(self)->str:
+    #     r"""
+    #     Get the mesh units
+    #     """
+
+    #     return self.mesh.units
+
+
+
+class StarBoxModel(AbstractModel):
     def __init__(self, mesh:StarBoxMesh, **kwargs) -> None:
         self.mesh = mesh
         mesh.write_mesh_file()
@@ -69,7 +135,7 @@ class StarBoxModel():
         self._load_material(**kwargs)
 
         # ------- nodal forces
-        self.write_nod_force_top = False
+        self.write_nod_force_top = True
         self.write_nod_force_bottom = True
 
     def mass(self):
@@ -78,6 +144,10 @@ class StarBoxModel():
     def absorbed_energy(self):
         # initial kinetic energy
         return self.wall_mass*self.wall_vel**2/2
+    
+    @property
+    def material_card_type(self):
+        return "LS_Dyna"
     
     def _load_impactor(self, **kwargs):
         for key, value in kwargs.items():
@@ -202,7 +272,18 @@ class StarBoxModel():
         inf.writelines('*CONTROL_ENERGY\n')
         inf.writelines('$     hgen      rwen    slnten     rylen\n')
         inf.writelines('         2         2         1         1\n')
+
+        ### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        ### CONTROL FOR PARALLEL ARITHMETIC
+        ### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        inf.writelines('*CONTROL_PARALLEL\n')
+        inf.writelines('$    -----     -----     CONST     -----\n')
+        inf.writelines('         0         0         1         1\n')
         
+        ### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        ###
+        ### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         inf.writelines('*CONTROL_TERMINATION\n')  
         inf.writelines('$   endtim    endcyc     dtmin    endeng    endmas\n')
         inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}\n".format(str(self.end_time), '0', '0.0', '0.0', '1.0E8'))
@@ -213,6 +294,12 @@ class StarBoxModel():
         inf.write('$\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
         inf.write('\n$\n')
         bin_asc = str(int(self.binary_ascii))
+
+        inf.writelines('*DATABASE_FORMAT\n')            
+        inf.writelines('$#      FORMAT N\n') 
+        inf.writelines("{:>10}\n".format("", "1"))
+
+
         inf.writelines('*DATABASE_GLSTAT\n')            
         inf.writelines('$#      dt    binary      lcur     ioopt\n')
         inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1'))
@@ -227,11 +314,32 @@ class StarBoxModel():
         # inf.writelines('$#      dt    binary      lcur     ioopt\n')
         # inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1')) 
         
+        ### ++++++++++++++++++++++++++++++++++++++
+        ### DATABASE CROSS SECTION_SET
+        ### ++++++++++++++++++++++++++++++++++++++
+        # inf.writelines('*DATABASE_CROSS_SECTION_SET_ID\n')            
+        # inf.writelines('$#      csid    title \n')
+        # inf.writelines("{:>10}{:>20}\n".format('1', "TOP PLANE"))
+        # inf.writelines('$#      nsid    hsid    bsid    ssid   tsid     dsid \n')
+        # inf.writelines("{:>10}\n".format('101'))
+
+        inf.writelines('*DATABASE_BINARY_INTFOR\n')            
+        inf.writelines('$#      dt\n')
+        inf.writelines("{:>10}\n".format(str(self.database_dtime)))
+
+        ### ++++++++++++++++++++++++++++++++++++++
+        ### DATABASE CROSS SECTION_SET
+        ### ++++++++++++++++++++++++++++++++++++++
+
         inf.writelines('*DATABASE_NODOUT\n')            
         inf.writelines('$#      dt    binary      lcur     ioopt   option1   option2 \n')
         inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1','0.0','0'))
 
         inf.writelines('*DATABASE_RWFORC\n')            
+        inf.writelines('$#      dt    binary      lcur     ioopt\n')
+        inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1'))
+
+        inf.writelines('*DATABASE_RCFORC\n')            
         inf.writelines('$#      dt    binary      lcur     ioopt\n')
         inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(str(self.database_dtime), bin_asc, '0', '1'))  
 
@@ -347,10 +455,16 @@ class StarBoxModel():
             inf.write('\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n')   
             inf.write('$#\n')
             added_id = 101
-            inf.write('*DATABASE_NODAL_FORCE_GROUP\n')
+            #inf.write('*DATABASE_NODAL_FORCE_GROUP\n')
+            #inf.write('$#    nsid       cid\n')
+            #inf.write("{:>10}{:>10}\n".format(str(added_id),'0'))
+            #inf.write('$\n')
+            # 
+            inf.write('*DATABASE_HISTORY_NODE_SET\n')  
             inf.write('$#    nsid       cid\n')
             inf.write("{:>10}{:>10}\n".format(str(added_id),'0'))
-            inf.write('$\n')                   
+            inf.write('$\n')
+
         inf.write('*END')   
         inf.close()       
 
@@ -376,6 +490,47 @@ class StarBoxModel():
             inf.write('$\n')                   
         inf.write('*END')   
         inf.close()
+    
+    def _write_radioss_output_control(self)->None:
+        r""" This is a trial function to write a
+        Radioss themed output"""
+
+        adr = os.path.join(os.getcwd(),'radioss_control_output.rad') 
+        inf = open(adr, 'w')
+        inf.write('/BEGIN 125\n')
+        inf.write('/TITLE \n')
+        inf.write('AAARFFFFF\n')
+
+        inf.write('###################################################################################')
+        inf.write('\n#                          CONTROL FORCE OUTPUT                              $')
+        inf.write('\n####################################################################################\n')   
+        inf.write('##\n')
+        #### SOME WRITINGS ABOUT THE SECTION
+        # inf.write(f'/TH/SECTIO/{added_id}\n')
+        # inf.write('##   thgroup_name\n')
+        # inf.write('BOTTOM_NODES_FORCES\n')
+        # inf.write("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format(
+        #     'FNX', 'FNY', 'FNZ', 'FTX', 'FTY', 'FTZ'))  
+        # inf.write("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format(
+        #     10001, 10002, 10003, 10004, 10005, 10006))
+        # # GET INFORMATION ABOUT RIGID WALL
+        # inf.write(f'/TH/RWALL/{1}\n')
+        # inf.write('##   thgroup_name\n')
+        # inf.write('DA_RIGID_WALL\n')
+        # inf.write("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format(
+        #     'FNX', 'FNY', 'FNZ', 'FTX', 'FTY', 'FTZ'))  
+        # inf.write('#\n')
+        # inf.write(f'/TH/RWALL/{2}\n')
+        # inf.write('##   thgroup_name\n')
+        # inf.write('DA_RIGID_WALL_2\n')
+        # inf.write("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format(
+        #     'FNX', 'FNY', 'FNZ', 'FTX', 'FTY', 'FTZ'))  
+        # inf.write('#\n')
+        inf.write("# Export some files with title\n")
+        inf.write("/TH/TITLE\n")               
+        inf.write('/END\n')   
+        inf.close()
+
 
     def write_input_files(self):
         self._write_bc_wall()
@@ -383,6 +538,7 @@ class StarBoxModel():
         self._write_nodal_force_top()
         self._write_nodal_force_bottom() # Cannot recogenized by OpenRadioss
         self._write_material()
+        #self._write_radioss_output_control()
         """
         Combines file together. combine is ready to be run via LS_Dyna
         """
@@ -392,17 +548,24 @@ class StarBoxModel():
         inf.writelines('*INCLUDE\n')
         inf.writelines('mesh.k\n')
         inf.writelines('material.k\n')
-        inf.writelines('bc_wall.k\n')  
+        inf.writelines('bc_wall.k\n') 
         inf.writelines('dcc.k\n')
+        #inf.writelines('*INCLUDE_RADIOSS\n')
+        #inf.writelines('radioss_control_output.rad\n')
+        
         # inf.writelines('nodal_force_top.k\n')
         # inf.writelines('nodal_force_bottom.k\n')
         inf.write('*END')   
         inf.close()
 
-class ThreePointBendingModel():
+class ThreePointBendingModel(AbstractModel):
     def __init__(self) -> None:
         self.rigid_mass = 0.086
         self.rigid_vel = -5000
+    
+    @property
+    def material_card_type(self):
+        return "OpenRadioss"
     
     def absorbed_energy(self):
         # initial kinetic energy
@@ -425,12 +588,13 @@ class ThreePointBendingModel():
         inf.write("/PROP/SHELL/1\n")
         inf.write("PID_tube\n")
         inf.write("#   Ishell    Ismstr     Ish3n    Idrill                            P_thick_fail\n")
-        inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('24','0','0', '0','', '', '', '0', '', ''))
+        inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('24','1','2', '2','', '', '', '0', '', ''))
         inf.write("#                 hm                  hf                  hr                  dm                  dn\n")
         inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('','0','', '0','','0','','0','','0'))
         # inf.write("                   0                   0                   0                   0                   0\n")
         inf.write("#        N   Istrain               Thick              Ashear              Ithick     Iplas\n")
         inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('5','0','', '1.8','', '0', '', '1', '1',''))
+        #inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('5','0','', '1.8','', str(5/6), '', '1', '1',''))
         # inf.write("         5         0                 1.8                   0                   1         1\n")
         inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
         ########################################################################################
@@ -438,22 +602,24 @@ class ThreePointBendingModel():
             inf.write('/PROP/SHELL/'+str(property_ids[i])+'\n')
             inf.write('PID_v'+str(i+1)+'\n')
             inf.write("#   Ishell    Ismstr     Ish3n    Idrill                            P_thick_fail\n")
-            inf.write("        24         0         0         0                                       0\n")
+            inf.write("        24         1         2         2                                       0\n")
             inf.write("#                 hm                  hf                  hr                  dm                  dn\n")
             inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('','0','', '0','','0','','0','','0'))
             inf.write("#        N   Istrain               Thick              Ashear              Ithick     Iplas\n")
-            inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('5','0','', str(thickness_list[i]),'', '1', '', '1', '1',''))
+            #inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('5','0','', str(thickness_list[i]),'', '1', '', '1', '1',''))
+            inf.writelines("{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}\n".format('5','0','', str(thickness_list[i]),'', str(5/6), '', '1', '1',''))
             # inf.write("{:>40}\n".format(str(thickness_list[i])))
         ######################################################################################## 
         inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")   
         inf.write("/PROP/SHELL/7\n")
         inf.write("PID_h\n")
         inf.write("#   Ishell    Ismstr     Ish3n    Idrill                            P_thick_fail\n")
-        inf.write("        24         0         0         0                                       0\n")
+        inf.write("        24         1         2         2                                       0\n")
         inf.write("#                 hm                  hf                  hr                  dm                  dn\n")
         inf.write("                   0                   0                   0                   0                   0\n")
         inf.write("#        N   Istrain               Thick              Ashear              Ithick     Iplas\n")
-        inf.write("         5         0                  .7                   1                   1         1\n")
+        #inf.write("         5         0                  .7                   1                   1         1\n")
+        inf.write(f"         5         0                  .7                   {str(5/6)}                   1         1\n")
         inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
         inf.write("/END\n")
         inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")

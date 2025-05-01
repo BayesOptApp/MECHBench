@@ -1,9 +1,10 @@
 import os
 import pandas as pd
 from abc import ABC, abstractmethod
-from typing import List, Iterable
+from typing import List, Iterable, Union
 import shutil
 from .solver import run_radioss
+from .utils.solver_setup import RunnerOptions
 from .mesh import *
 from .fem import *
 
@@ -13,21 +14,37 @@ Remark: following phases are important
 1.  
 '''
 
+
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+### THESE ARE CONSTANTS TO DETERMINE THE OUTPUTS (OBJECTIVES) OF THE PROBLEM
+### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+__PRINCIPAL_OUTPUTS:tuple = ("mass", "absorbed_energy","intrusion")
+__COMPOSITE_OUTPUTS:tuple = ("specific_energy","usage_ratio")
+
 class OptiProblem(ABC):
-    '''
+    r'''
     The abstract of the structural optimization problem, with three subclass (three problem types)
     The instance is initialized by problem dimension, output data type, and the batch file path of the solver OpenRadioss. 
     The core idea is to generate a specific type of instance, input the variable array then output the evaluation of the desired data type like mass, intrusion, etc.
     The input variables should be in an universal search space, default (-5,5). For the evaluation those variables will be mapped to the real FEM problem space.
     '''
-    def __init__(self, dimension:int, output_data:Iterable, batch_file_path:str,sequential_id_numbering:bool=True) -> None:
+    def __init__(self, dimension:int, output_data:Union[Iterable,str], runner_options:RunnerOptions,sequential_id_numbering:bool=True) -> None:
+        
+        
         self.__dimension:int = dimension
-        self.__output_data:Iterable = output_data
-        self.__batch_file_path:str = batch_file_path
+        self.__output_data:Union[Iterable,str] = output_data
         self.__sequential_id_numbering:bool = sequential_id_numbering
 
+        # Assign the Properties to the case
+        self._runner_options = RunnerOptions(runner_options)
+
+        self._runner_options.complement()
+        self._runner_options.amend_integer_options(runner_options)
+
+
         # The attributes need to be overwritten in teh subclass
-        self.__problem_id:int = -1 
+        self._problem_id:int = -1 
         self.variable_ranges = None # constraints of the problem
         self.input_file_name = None # input deck name
         self.output_file_name = None # output result name
@@ -126,7 +143,23 @@ class OptiProblem(ABC):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
         working_dir = os.path.join(os.getcwd(), dir_name)
         input_file_path = os.path.join(working_dir, self.input_file_name)
-        run_radioss(input_file_path, self.batch_file_path, runStarter=runStarter)
+
+        if runStarter:
+            # This is just one bypass in order to avoid setting MP settings
+            # for just the mass computation
+            run_radioss(input_file_path, 
+                        self.batch_file_path, 
+                        runStarter=runStarter,
+                        write_vtk=False,
+                        np_int=1,
+                        nt_int=1)
+        else:
+            run_radioss(input_file_path, 
+                        self.batch_file_path, 
+                        runStarter=runStarter,
+                        write_vtk=bool(self._runner_options('write_vtk')),
+                        np_int=self._runner_options('np'),
+                        nt_int=self._runner_options('nt'))
 
     def load_output_data_frame(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.problem_id}'
@@ -135,6 +168,7 @@ class OptiProblem(ABC):
         output_file_path = os.path.join(working_dir, self.output_file_name)
         self.output_data_frame = pd.read_csv(output_file_path)
         self.output_data_frame.columns = self.output_data_frame.columns.str.replace(' ', '')
+        
         # update problem id again
         if self.__sequential_id_numbering:
             self.problem_id += 1
@@ -161,7 +195,7 @@ class OptiProblem(ABC):
 
         return ValueError("Mass value output failed!")  # Return None if the mass value wasn't found 
 
-    def __call__(self, variable_array:list, problem_id:int=-1):
+    def __call__(self, variable_array:list, problem_id:int=-1)->Union[float,List[float]]:
         
         # This is a force fork to make sure the problem_id is well set
         if not self.__sequential_id_numbering:
@@ -178,6 +212,7 @@ class OptiProblem(ABC):
                 obj_.sim_status = 1
 
             val:float = obj_.extract_mass_from_file() - obj_.model.rigid_mass
+
             if self.__sequential_id_numbering:
                 obj_.problem_id +=1  
 
@@ -224,6 +259,8 @@ class OptiProblem(ABC):
             resp_arr = list()
             looping_array = self.output_data.copy()
             idx:int = -1
+
+
             # Check is intrusion is in the list
             if 'intrusion' in self.output_data:
                 # Get the position of "instrusion" in the array
@@ -264,7 +301,7 @@ class OptiProblem(ABC):
 
     @property
     def problem_id(self)->int:
-        return self.__problem_id
+        return self._problem_id
     
     @property
     def dimension(self)->int:
@@ -272,10 +309,10 @@ class OptiProblem(ABC):
     
     @property
     def batch_file_path(self)->str:
-        return self.__batch_file_path
+        return self._runner_options('open_radioss_main_path')
     
     @property
-    def output_data(self):
+    def output_data(self)->Union[List[str],str]:
         return self.__output_data
     
     @property
@@ -293,27 +330,53 @@ class OptiProblem(ABC):
             if new_problem_id <= 0:
                 raise ValueError("The value must be greater than 0")
             # Assign the new problem ID
-            self.__problem_id = new_problem_id
+            self._problem_id = new_problem_id
     
-    @batch_file_path.setter
-    def batch_file_path(self, new_batch_file_path:str)->None:
-
-        if not isinstance(new_batch_file_path,str):
-            raise TypeError("The batch file is not a string")
-        else:
-            if not os.path.exists(new_batch_file_path):
-                raise("The batch file does not exist")
-            else:
-                # Set the new batch file path
-                self.__batch_file_path = new_batch_file_path
 
     @output_data.setter
-    def output_data(self, new_output_data)->None:
-        self.__output_data = new_output_data
+    def output_data(self, new_output_data:Union[Iterable,str])->None:
+        #self.__output_data = new_output_data
+
+        # CASE 1: Check the output data is a string
+        if isinstance(new_output_data,str):
+            if ((new_output_data.strip().lower() in __COMPOSITE_OUTPUTS) or 
+                (new_output_data.strip().lower() in __PRINCIPAL_OUTPUTS)):
+                # Assign
+                self.__output_data = new_output_data
+            else:
+                raise ValueError("The output data is not defined as an output")
+        elif isinstance(new_output_data,(list,List[str])):
+            # Loop all over the elements and check the elements are part 
+            # of the defined group of outputs
+
+            idx_to_remove = []
+            for idx, elem in enumerate(new_output_data):
+
+                try:
+                    if not ((elem.strip().lower() in __COMPOSITE_OUTPUTS) or 
+                    (elem.strip().lower() in __PRINCIPAL_OUTPUTS)):
+                        idx_to_remove.append(idx)
+                except Exception as e:
+                    print("The list of output data is not correctly set as a list of strings")
+            
+
+            for idx in idx_to_remove:
+                try:
+                    new_output_data.pop(idx)
+                except IndexError as e:
+                    print("The output data is empty")
+                except Exception as e:
+                    print("Something else happened...")
+                
+            
+            # Now try to set the output data
+            self.__output_data = new_output_data
+                    
+
     
-    @batch_file_path.deleter
-    def batch_file_path(self)->None:
-        del self.__batch_file_path
+    # @batch_file_path.deleter
+    # def batch_file_path(self)->None:
+    #     del self.__batch_file_path
     
     @output_data.deleter
     def output_data(self)->None:
@@ -325,8 +388,16 @@ class OptiProblem(ABC):
 class StarBox(OptiProblem):
     instance_counter = 1
 
-    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool,**kwargs) -> None:
-        super().__init__(dimension, output_data, batch_file_path,sequential_id_numbering)
+    def __init__(self, 
+                 dimension, 
+                 output_data, 
+                 runner_options:RunnerOptions,
+                 sequential_id_numbering:bool,**kwargs) -> None:
+        
+        super().__init__(dimension, 
+                         output_data, 
+                         runner_options,
+                         sequential_id_numbering)
         # 1 -> square
         # 2 -> rectangular
         # 3 -> rectangular with varying thickness
@@ -381,7 +452,8 @@ class StarBox(OptiProblem):
 
 
     def _write_input_file(self, fem_space_variable_array):
-        self.mesh = StarBoxMesh(fem_space_variable_array) 
+        self.mesh = StarBoxMesh(fem_space_variable_array,
+                                h_level=self._runner_options('h_level')) 
         self.model = StarBoxModel(self.mesh)
         self.model.write_input_files()
     
@@ -392,8 +464,12 @@ class ThreePointBending(OptiProblem):
     The key process involves extracting the section of the input file related to thickness, modifying it, and merging it back with the original input to generate a new starter file.
     '''
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool) -> None:
-        super().__init__(dimension, output_data, batch_file_path,sequential_id_numbering)
+    def __init__(self, 
+                 dimension, 
+                 output_data, 
+                 runner_options:RunnerOptions,
+                 sequential_id_numbering:bool) -> None:
+        super().__init__(dimension, output_data, runner_options,sequential_id_numbering)
         # 1 -> all 5 shell thickness vary with same value. 
         # 2 -> only first and the last shell thickness vary, other fixed with middle value. 
         # 3 -> the first, middle, and last shell thickness vary. 
@@ -478,8 +554,10 @@ class ThreePointBending(OptiProblem):
 
 class CrashTube(OptiProblem):
     instance_counter = 1
-    def __init__(self, dimension, output_data, batch_file_path:str,sequential_id_numbering:bool) -> None:
-        super().__init__(dimension, output_data, batch_file_path,sequential_id_numbering)
+    def __init__(self, dimension, output_data, 
+                 runner_options:RunnerOptions,
+                 sequential_id_numbering:bool) -> None:
+        super().__init__(dimension, output_data, runner_options ,sequential_id_numbering)
         # 2 -> three positions and depths vary together with same value. 
         # 3 -> all three trigger positions fixed, the three trigger depth vary. 
         # 4 -> except for middle trigger position and depth, other 4 vary ().
@@ -503,6 +581,7 @@ class CrashTube(OptiProblem):
             CrashTube.instance_counter+=1
 
     def _write_input_file(self, fem_space_variable_array):
-        self.mesh = CrashTubeMesh(fem_space_variable_array) 
+        self.mesh = CrashTubeMesh(fem_space_variable_array,
+                                  h_level=self._runner_options('h_level')) 
         self.model = CrashTubeModel(self.mesh)
         self.model.write_input_files()
