@@ -28,16 +28,16 @@ else:
 runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
                  "np":4,
-                 "nt":2,
+                 "nt":1,
                  "h_level":1
 }
 
 def main():
-
-    a = sob.get_problem(2,5,'intrusion',batch_file_path)
-    intrusion1 = a([1,2,3,3,1])
+    a = sob.get_problem(1,9,['intrusion',"specific_energy"],runnerOptions,sequential_id_numbering=False)
+    intrusion1 = a([-5,-5,5,5,5,-5,1,2,-4],161)
     print(intrusion1)
     
+
 
 if __name__ == '__main__':
     main()
