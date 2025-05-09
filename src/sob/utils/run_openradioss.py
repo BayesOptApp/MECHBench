@@ -219,7 +219,12 @@ class RunOpenRadioss():
     # --------------------------------------------------------------
     # Get jobname,runid,job,directory from the input file
     # --------------------------------------------------------------
-    def get_engine_input_file_list(self): 
+    def get_engine_input_file_list(self, repair:bool=False):
+        r"""
+        This function gets the engine input files.
+
+        The repair option is to get insert the command "/TH/TITLE"
+        """ 
         engine_input_files = [ file for file in os.listdir(self.running_directory) if file.startswith(self.jobname) and  file.endswith(".rad") and len(file) == len(self.jobname) + 9 ]
         engine_input_files.sort()
 
@@ -227,6 +232,16 @@ class RunOpenRadioss():
         run_id=get_deck_runid(first_item)
         if run_id == 0:
             del engine_input_files[0]
+        
+        if repair:
+            # Check if the file is already repaired
+            for iFile in engine_input_files:
+                with open(os.path.join(self.running_directory, iFile), 'r') as f:
+                    lines = f.readlines()
+                    if "/TH/TITLE" not in lines:
+                        with open(os.path.join(self.running_directory, iFile), 'a') as f:
+                            f.write("/TH/TITLE\n")
+                            print(f"Added /TH/TITLE to {iFile}")
 
         return engine_input_files
 

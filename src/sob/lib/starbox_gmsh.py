@@ -69,7 +69,6 @@ class Starbox_GMSH(Template_GMSH_Mesh_Constructor):
 
         # TRIGGER DEPTH
         depth = params_dict['trigger_depth']
-        #depth = 0.0
 
 
         # POINT SIZE

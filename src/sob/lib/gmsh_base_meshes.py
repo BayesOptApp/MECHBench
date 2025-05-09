@@ -80,21 +80,15 @@ class Template_GMSH_Mesh_Constructor(ABC):
         This function just checks a parameter set from a dictionary and ensures 
         all the required parameters of the class are contained within the dictionary.
         """
-        count = 0
-        total_params = len(self.required_parameters)
-        missing_params = []
+        missing_params = [
+        param for param in self.required_parameters
+        if param.lower() not in (key.lower() for key in params_dict.keys())
+        ]
 
-        for key in params_dict.keys():
-            if key.lower() in self.required_parameters:
-                count+=1
-            else:
-                missing_params.append(key)
-
-        
-        if count == total_params:
+        if not missing_params:
             return True
         else:
-            print("Missing parameters",missing_params)
+            print("Missing parameters:", missing_params)
             return False
 
         

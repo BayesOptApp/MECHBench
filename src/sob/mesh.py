@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from .lib.py_mesh import py_mesh
 from .lib.py_mesh_v2 import py_mesh_v2
 from .lib.starbox_gmsh import Starbox_GMSH
+from .lib.crashtube_gmsh import Crashtube_GMSH
+from typing import Union, List, Optional
 import json
 
 
@@ -423,17 +425,6 @@ class StarBoxMesh(AbstractMeshSettings):
         trigger_rows = self.trigger_rows
         mid = self.mat_id
 
-        # grid = [
-        #     {"gid": 1001, "x": 51.0, "y": 48.0},
-        #     {"gid": 1002, "x": 0.0, "y": 39.0},
-        #     {"gid": 1003, "x": -51.0, "y": 48.0},
-        #     {"gid": 1004, "x": -33.0, "y": 0.0},
-        #     {"gid": 1005, "x": -51.0, "y": -48.0},
-        #     {"gid": 1006, "x": 0.0, "y": -39.0},
-        #     {"gid": 1007, "x": 51.0, "y": -48.0},
-        #     {"gid": 1008, "x": 33.0, "y": 0.0}
-        # ]
-
         grid = [{"gid": int(gid), "x": x, "y": y} for gid, x, y in zip(self.grid[:,0], 
                                                                        self.grid[:,1], 
                                                                        self.grid[:,2])]
@@ -498,23 +489,10 @@ class CrashTubeMesh(AbstractMeshSettings):
         width = 80 / 2
         self.grid_pts = np.array([[-length, width], [length, width],
                                     [length, -width], [-length, -width]])
-        self.trigger_positions, self.trigger_depths = self._determine_trigger_depths_and_position()
-        # Default values for configuration parameters
-        self.default_parameters = {
-            'thickness': 1.2,
-            'elsize': 4,
-            'extrusion_length': 800,
-            'node_starting_id': 1001,
-            'part_starting_id': 101,
-            'id_min': 1000001,
-            'trigger_height': 12,  # 3 * elsize = 3 * 4 = 12
-            'elform': 2,
-            'nip': 3,
-            'shrf': 0.83333,
-            'mat_id': 999,
-            'node_starting_id': 1001,
-            'part_starting_id': 101
-        }
+        (self.trigger_positions, 
+        self.trigger_depths, 
+        self.trigger_heights) = self._determine_trigger_depths_heights_and_position()
+
         self._set_parameters(**kwargs)
         self._generate_database_and_grid()
         
@@ -527,6 +505,29 @@ class CrashTubeMesh(AbstractMeshSettings):
         return result
     
     @property
+    def default_parameters(self)->dict:
+        r"""
+        Return the default parameters for some default configuration
+        and mesh setup.
+        """
+        return {
+            'thickness': 1.2,
+            'n_elements_side': 12,
+            'elsize': 4,
+            'extrusion_length': 800,
+            'node_starting_id': 1001,
+            'part_starting_id': 101,
+            'id_min': 1000001,
+            'trigger_height': 3,  # 3 * elsize = 3 * 4 = 12
+            'elform': 2,
+            'nip': 3,
+            'shrf': 0.83333,
+            'mat_id': 999,
+            'node_starting_id': 1001,
+            'part_starting_id': 101
+        }
+    
+    @property
     def characteristic_length(self)->float:
         r"""Returns the characteristic length of the CrashTubeMesh,
         namely the extrusion length.
@@ -534,41 +535,61 @@ class CrashTubeMesh(AbstractMeshSettings):
 
         return self.extrusion_length
     
-    def _determine_trigger_depths_and_position(self):
+    def _determine_trigger_depths_heights_and_position(self)->Union[np.ndarray,
+                                                                    np.ndarray,
+                                                                    np.ndarray]:
         '''
-        2 -> three positions and depths vary together with same value. 
-        3 -> all three trigger positions fixed, the three trigger depth vary. 
-        4 -> except for middle trigger position and depth, other 4 vary ().
-        5 -> except for middle trigger depth, other 5 vary. 
-        6 -> all three positions and depths vary.
+            Generalized for dimensions from 2 up to 30.
+
+            variable_array is assumed to follow the repeating pattern:
+            [position_1, depth_1, height_1, position_2, depth_2, height_2, ...]
+
+            Returns
+            ------------------------
+            - trigger_positions (np.array): up to 5 vertical positions
+            - trigger_depths (np.array): up to 5 depths
+            - trigger_heights (np.array): up to 5 heights
         '''
-        
-        if self.dimension == 2:
-            position = self.variable_array[0]
-            depth = self.variable_array[1]
-            trigger_positions = [position] * 3
-            trigger_depths = [depth] * 3
 
-        elif self.dimension == 3:
-            trigger_positions = [0] *3
-            trigger_depths = self.variable_array
+        if self.dimension < 1 or self.dimension > 30:
+            raise ValueError('Invalid dimension. The dimension must be in [1, 30]')
 
-        elif self.dimension == 4:
-            trigger_positions = [self.variable_array[0],0,self.variable_array[2]]
-            trigger_depths = [self.variable_array[1],0,self.variable_array[3]]
-
-        elif self.dimension == 5:
-            trigger_positions = self.variable_array[:3]
-            trigger_depths = self.variable_array[3],0,self.variable_array[4]
-
-        elif self.dimension == 6:
-            trigger_positions = self.variable_array[:3]
-            trigger_depths = self.variable_array[3:]
-
+        if self.dimension <=15:
+            trigger_positions = [0.0] * 5
+            trigger_depths = [0.0] * 5
+            trigger_heights = [self.default_parameters['trigger_height']] * 5
         else:
-            raise ValueError('Invalid dimension. The dimensions of the problem can only be in [1, 5]')
-        
-        return np.array(trigger_positions),np.array(trigger_depths)
+            trigger_positions = [0.0] * 10
+            trigger_depths = [0.0] * 10
+            trigger_heights = [self.default_parameters['trigger_height']] * 10
+
+        num_vars = min(self.dimension, len(self.variable_array))
+
+        for i in range(num_vars):
+            group_index = i//3   # 0, 1, 2 for each trigger group
+            role_index = np.remainder(i, 3)                # 0: position, 1: depth, 2: height
+
+            if role_index == 0:
+                trigger_positions[group_index] = self.variable_array[i]
+            elif role_index == 1:
+                trigger_depths[group_index] = self.variable_array[i]
+            elif role_index == 2:
+                trigger_heights[group_index] = self.variable_array[i]
+
+            
+
+        if self.dimension <=15:
+            return (
+                np.tile(np.array(trigger_positions),(2,)),
+                np.tile(np.array(trigger_depths),(2,)),
+                np.tile(np.array(trigger_heights),(2,))
+            )
+        else:
+            return (
+                np.array(trigger_positions),
+                np.array(trigger_depths),
+                np.array(trigger_heights)
+            )
             
     
     def _set_parameters(self, **kwargs):
@@ -604,14 +625,11 @@ class CrashTubeMesh(AbstractMeshSettings):
         # else:
         #     self.extrusion_length = self.elsize * 30
 
-        if 'trigger_height' in kwargs:
-            self.trigger_height = float(kwargs['trigger_height'])
-            self.trigger_rows = int(self.trigger_height / self.elsize)
-        else:
-            self.trigger_rows = 3
-
-        # if self.dimension in [3, 5]:
-        #     self.thickness = self.variable_array[-1]
+        # if 'trigger_height' in kwargs:
+        #     self.trigger_height = float(kwargs['trigger_height'])
+        #     self.trigger_rows = int(self.trigger_height / self.elsize)
+        # else:
+        #     self.trigger_rows = 3
         
     def _generate_database_and_grid(self):
         # Array stored node ids
@@ -633,7 +651,7 @@ class CrashTubeMesh(AbstractMeshSettings):
         # Last row of cells
         cell_row = np.array([self.part_starting_id + i + 1, self.node_starting_id + i + 1, self.node_starting_id, self.thickness])
         self.cell = np.vstack((self.cell, cell_row))
-
+        
 
     def write_py_mesh_input(self): 
         """ 
@@ -706,11 +724,123 @@ class CrashTubeMesh(AbstractMeshSettings):
             inf.writelines(str_cell.format('cell,',str(int(self.cell[i,0]))+',',
                             str(int(self.cell[i,1]))+',', str(int(self.cell[i,2]))+',',str(self.cell[i,3])))          
         inf.close()
+    
+    def build_trigger_directories(self):
+        r"""
+        This function builds the 'trigger directory' in order to set the properties
+        needed to build-up the triggers in the mesh 
+        """
+
+        # Transform the list of trigger positions and trigger heights into by mapping
+        # into "physical space" and not defined by the mesh.
+
+        n_elements_z = self.extrusion_length / self.elsize
+
+
+        # Make a list of the positions in "mesh definition" of each trigger
+        
+        end_points_segments = np.linspace(0, n_elements_z, num=6, endpoint=True)
+
+        neutral_points_segments = end_points_segments[:-1] + (end_points_segments[1:] - end_points_segments[:-1]) / 2
+        neutral_points_segments = np.tile(neutral_points_segments, (2, 1)).flatten()
+
+        # Get the trigger positions in the mesh definition
+        trigger_positions_complete = np.add(np.round(self.trigger_positions,
+                                                     decimals=0), neutral_points_segments)
+
+        # Get splitted 
+        trigger_positions_1 = (trigger_positions_complete[:5]*self.elsize).astype(int)
+        trigger_positions_2 = (trigger_positions_complete[5:]*self.elsize).astype(int)
+
+        trigger_heights_1 = (np.ceil(self.trigger_heights[:5])*self.elsize).astype(int)
+        trigger_heights_2 = (np.ceil(self.trigger_heights[5:])*self.elsize).astype(int)
+
+        trigger_depths_1 = (self.trigger_depths[:5])
+        trigger_depths_2 = (self.trigger_depths[5:])
+
+
+
+        dict_1 = {
+                i + 1: {
+                    'Y': int(trigger_positions_1[i]),
+                    'HEIGHT': int(trigger_heights_1[i]),
+                    'DEPTH': float(trigger_depths_1[i])
+                }
+                for i in range(5)
+            }
+        
+        dict_2 = {
+                i + 1: {
+                    'Y': int(trigger_positions_2[i]),
+                    'HEIGHT': int(trigger_heights_2[i]),
+                    'DEPTH': float(trigger_depths_2[i])
+                }
+                for i in range(5)
+            }
+        
+        return dict_1, dict_2
+
+
+
+        
+
+    def write_py_mesh_input_2(self):
+        # These would normally be computed or read from elsewhere
+        units = "kg mm ms kN GPa kN-mm"
+        extrusion_length = self.extrusion_length
+
+        id_min = self.id_min
+        #trigger_depth = self.trigger_depth
+        #trigger_rows = self.trigger_rows
+        mid = self.mat_id
+
+        grid = [{"gid": int(gid), "x": x, "y": y} for gid, x, y in zip(self.grid[:,0], 
+                                                                       self.grid[:,1], 
+                                                                       self.grid[:,2])]
+
+        thick_array = [self.thickness]
+
+        cell = [{"cid": cid, "t": t} for cid, t in zip(range(self.part_starting_id, 
+                                                             self.part_starting_id + len(thick_array)), 
+                                                             thick_array)]
+        
+        (dict_1, 
+         dict_2) = self.build_trigger_directories()
+
+        # Build the full data structure
+        data = {
+            "units": units,
+            "extrusion_length": extrusion_length,
+            "h_level":self.h_level,
+            "elform": self.elform,
+            "nip": self.nip,
+            "shrf": self.shrf,
+            "elsize": self.elsize,
+            "id_min": id_min,
+            "mid": mid,
+            "grid": grid,
+            "cell": cell,
+            'n_elements_side':self.n_elements_side,
+            'thickness':self.thickness,
+            'trigger_dict_1': dict_1,
+            'trigger_dict_2': dict_2
+        }
+
+        # Output JSON file
+        with open("py_mesh_input.json", "w") as f:
+            json.dump(data, f, indent=4)
+
 
     def write_mesh_file(self):
         # ---- running py_mesh
-        self.write_py_mesh_input()
-        py_mesh_v2('py_mesh.input')
+        # self.write_py_mesh_input()
+        # py_mesh_v2('py_mesh.input')
+
+        # Use the GMSH pipeline
+        self.write_py_mesh_input_2()
+        cl = Crashtube_GMSH("crash_tube_mesh")
+        cl("py_mesh_input.json",True)
+
 
 
 
@@ -888,6 +1018,8 @@ class ThreePointBendingMesh(AbstractMeshSettings):
             inf.writelines(str_cell.format('cell,',str(int(self.cell[i,0]))+',',
                             str(int(self.cell[i,1]))+',', str(int(self.cell[i,2]))+',',str(self.cell[i,3])))          
         inf.close()
+
+
 
     def write_mesh_file(self):
         # ---- running py_mesh
