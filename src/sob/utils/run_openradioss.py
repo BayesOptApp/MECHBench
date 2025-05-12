@@ -341,7 +341,7 @@ class RunOpenRadioss():
 # Runs Time History to CSV converter
 # --------------------------------------------------------------
     def convert_th_to_csv(self,th_file):
-        th_to_csv_exec =os.path.join("exec","th_to_csv_"+self.arch + "_2" +self.bin_extension)
+        th_to_csv_exec =os.path.join("exec","th_to_csv_"+self.arch +self.bin_extension)
     
         thtocsv_command = [ os.path.join(self.openradioss_path, th_to_csv_exec), 
                             os.path.join(self.running_directory, th_file)  ]
