@@ -33,8 +33,8 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 }
 
 def main():
-    a = sob.get_problem(3,30,['intrusion'],runnerOptions,sequential_id_numbering=False)
-    intrusion1 = a(np.hstack(([-5]*15,[5]*15)),169)
+    a = sob.get_problem(2,5,['intrusion'],runnerOptions,sequential_id_numbering=False)
+    intrusion1 = a([-5]*5,169)
     print(intrusion1)
     
 
