@@ -29,12 +29,17 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
                  "np":4,
                  "nt":1,
-                 "h_level":1
+                 "h_level":2,
+                 "gmsh_verbosity":0,
 }
 
 def main():
-    a = sob.get_problem(2,5,['intrusion'],runnerOptions,sequential_id_numbering=False)
-    intrusion1 = a([-5]*5,169)
+    a = sob.get_problem(2,10,["mean_impact_force","intrusion"],runnerOptions,sequential_id_numbering=False)
+    #vector = [5]
+    #vector = np.hstack((([2,3,2.5,2.5]),([5]*5),([-3.5]*20))).tolist()
+    #vector = [-5,-5,-1,-1,1.5]
+    vector = [-5,-5,-5,-5,-5,5,5,5,5,5]
+    intrusion1 = a(vector,251)
     print(intrusion1)
     
 

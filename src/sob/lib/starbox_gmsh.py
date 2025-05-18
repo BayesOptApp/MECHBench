@@ -53,6 +53,13 @@ class Starbox_GMSH(Template_GMSH_Mesh_Constructor):
             raise ValueError("The parameters to generate the mesh does not" \
             "fulfill the minimal criteria")
         
+        # Check from the parameters if the verbosity is set
+        verbous = params_dict.pop('gmsh_verbosity', 0)
+        
+        if verbous == 0:
+            gmsh.option.setNumber("General.Terminal", 0)
+            gmsh.option.setNumber("General.Verbosity", 0)
+        
 
         # Mesh refinement level
         lv:int = params_dict['h_level']
@@ -1057,32 +1064,6 @@ class Starbox_GMSH(Template_GMSH_Mesh_Constructor):
             ### NOTE: Write the header of keyword
             f.write("*KEYWORD\n")
 
-            ### ++++++++++++++++++++++++++++++++++++++
-            ### Write the Part list (1 per partition)
-            ### ++++++++++++++++++++++++++++++++++++++
-            f.write("*SET_PART_LIST\n")
-            f.write('${0:->9}\n'.format('sid'))
-            f.write('{0:>10}\n'.format(101))
-            f.write('${0:->9}{1:->10}{2:->10}{3:->10}'.format('pid1',
-                                                        'pid2',
-                                                        'pid3',
-                                                        'pid4'))
-            f.write('{0:->10}{1:->10}{2:->10}{3:->10}\n'.format('pid5',
-                                                            'pid6',
-                                                            'pid7',
-                                                            'pid8'))
-
-            for i in range(0, len(set_pids), 8):
-                chunk = set_pids[i:i+8]
-                for p in chunk:
-                    f.write('{0:>10}'.format(p))
-                f.write('\n')
-
-
-            ### ++++++++++++++++++++++++++++++++++++
-            ### Write the bottom nodes as part of a group
-            ### ++++++++++++++++++++++++++++++++++++
-
             
 
             # Node sets
@@ -1195,22 +1176,6 @@ class Starbox_GMSH(Template_GMSH_Mesh_Constructor):
                                                                 n_eid[1], 
                                                                 n_eid[2], 
                                                                 n_eid[3]))
-                    # write the nodes:
-                    
-            # for e in gmsh.model.getEntities(2):  # Loop through 2D entities (shells)
-            #     partitions = gmsh.model.getPartitions(e[0], e[1])
-            #     for part in partitions:
-            #         element_tags, node_tags = gmsh.model.mesh.getElements(e[0], e[1])[1:3]
-            #         thickness = THICKNESS_MAP.get(part, 1.0)  # Default thickness 1.0 mm
-
-            #         for i, et in enumerate(element_tags[0]):
-            #             nodes = node_tags[0][i*4:(i+1)*4]  # Assuming quadrilateral shells
-            #             f.write(f"{int(et)}, {int(nodes[0])}, {int(nodes[1])}, {int(nodes[2])}, {int(nodes[3])}, {part}\n")
-
-            # Define shell sections
-            # f.write("*SECTION_SHELL\n")
-            # for part, thickness in THICKNESS_MAP.items():
-            #     f.write(f"{part}, 1, {thickness}, 0.0, 3\n")  # MID=1, Thickness, Integration points = 5
 
             f.write("*END\n")
 
@@ -1219,8 +1184,7 @@ class Starbox_GMSH(Template_GMSH_Mesh_Constructor):
         #gmsh.model.mesh.unpartition()
 
         # ... and save it to disk
-        #gmsh.write("t1.msh")
-        gmsh.write("t1.geo_unrolled")
+        #gmsh.write("t1.geo_unrolled")
         gmsh.write("mesh1_star_box.vtk")
 
 

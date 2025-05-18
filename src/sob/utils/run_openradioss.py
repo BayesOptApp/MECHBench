@@ -223,7 +223,9 @@ class RunOpenRadioss():
         r"""
         This function gets the engine input files.
 
-        The repair option is to get insert the command "/TH/TITLE"
+        Args
+        -------
+        - repair: `bool`: option is to get insert the command "/TH/TITLE" and "ANIM/ELEM/THIC"
         """ 
         engine_input_files = [ file for file in os.listdir(self.running_directory) if file.startswith(self.jobname) and  file.endswith(".rad") and len(file) == len(self.jobname) + 9 ]
         engine_input_files.sort()
@@ -242,6 +244,10 @@ class RunOpenRadioss():
                         with open(os.path.join(self.running_directory, iFile), 'a') as f:
                             f.write("/TH/TITLE\n")
                             print(f"Added /TH/TITLE to {iFile}")
+                    if "/ANIM/ELEM/THIC" not in lines:
+                        with open(os.path.join(self.running_directory, iFile), 'a') as f:
+                            f.write("/ANIM/ELEM/THIC\n")
+                            print(f"Added /ANIM/ELEM/THIC to {iFile}")
 
         return engine_input_files
 
@@ -321,8 +327,13 @@ class RunOpenRadioss():
                                stdout=animtovtk_output_file,
                                stderr=subprocess.PIPE)
             
+        if output.returncode != 0:
+            # If the process fails, print the error message
+            raise RuntimeError("Error with the process: \n" + output.stderr)
         
-        a = 1
+        # Check if the output file was created
+        if not os.path.exists(animtovtk_output_name):
+            raise RuntimeError("Error: Output file not created: " + animtovtk_output_name)
 
 # --------------------------------------------------------------
 # Get Time History files list
@@ -334,7 +345,8 @@ class RunOpenRadioss():
         # It is possible that .csv files are in the directory
         for file in prov_th_to_convert:
             if not file.endswith(".csv"):
-                th_to_convert.append(file)
+                if "TITLES" not in file:
+                    th_to_convert.append(file)
         return th_to_convert
 
 # --------------------------------------------------------------
@@ -347,11 +359,33 @@ class RunOpenRadioss():
                             os.path.join(self.running_directory, th_file)  ]
         # Redirect the output to the th-csv converter
         output = subprocess.run(thtocsv_command, env=self.custom_env, cwd=self.running_directory,
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                capture_output=False,
+                                shell=False,
+                                text=True)
 
-        if output.stderr is not None:
-            raise RuntimeError("Error with the process: \n" + \
-                               output.stderr)
+        if output.returncode != 0:
+            # If the process fails, print the error message
+            thtocsv_command_2 = [ os.path.join(self.openradioss_path, th_to_csv_exec), 
+                            os.path.join(th_file)  ]
+            
+
+            # Redirect the output to the th-csv converter
+            output_2 = subprocess.run(thtocsv_command_2, env=self.custom_env, cwd=self.running_directory,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                capture_output=False,
+                                shell=False,
+                                text=True)
+            
+            #if output_2.returncode != 0:
+                # If the process fails, print the error message
+            #    raise RuntimeError("Error with the process: \n" + output.stderr)
+
+        # Check if the output file was created
+        thtocsv_output_name = os.path.join(self.running_directory, th_file + ".csv")
+
+        if not os.path.exists(thtocsv_output_name):
+            raise RuntimeError("Error: Output file not created: " + thtocsv_output_name)
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Modification to check the executables first

@@ -17,6 +17,7 @@ def setup_default_options_(
         h_level = '1 # Set integers given a mesh refinement level',
         nt = '1 # Set integers as number of threads in the case',
         np = '1 # Set integers as number of processors in the case',
+        gmsh_verbosity = '0 # Set integers as verbosity level of gmsh',
         save_mesh_vtk = '0 # or 1 if you want GMSH/mesher to save an extra file with the generated mesh'+\
                         'as a vtk file'
         

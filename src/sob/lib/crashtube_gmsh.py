@@ -38,6 +38,8 @@ class Crashtube_GMSH(Template_GMSH_Mesh_Constructor):
         except:
             print("GMSH couldn't be initialised")
 
+
+
         import numpy as np
         from math import sqrt
         
@@ -51,6 +53,12 @@ class Crashtube_GMSH(Template_GMSH_Mesh_Constructor):
             raise ValueError("The parameters to generate the mesh does not " \
             "fulfill the minimal criteria")
         
+        # Check from the parameters if the verbosity is set
+        verbous = params_dict.pop('gmsh_verbosity', 0)
+        
+        if verbous == 0:
+            gmsh.option.setNumber("General.Terminal", 0)
+            gmsh.option.setNumber("General.Verbosity", 0)
 
         # MESH REFINEMENT LEVEL
         lv:int = params_dict['h_level']
@@ -802,8 +810,6 @@ class Crashtube_GMSH(Template_GMSH_Mesh_Constructor):
         #gmsh.model.mesh.unpartition()
 
         # ... and save it to disk
-        #gmsh.write("t1.msh")
-        gmsh.write("t3.geo_unrolled")
         gmsh.write("mesh3_crash_tube.vtk")
 
 
