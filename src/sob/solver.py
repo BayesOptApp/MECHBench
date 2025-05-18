@@ -94,7 +94,7 @@ def run_radioss(input_file_path:Union[str,Path],
     # ======================================
     if not runStarter:
         # Get the files which are part of the engine
-        engine_list = run_env.get_engine_input_file_list()
+        engine_list = run_env.get_engine_input_file_list(repair=True)
 
         engine_stdout:list = []
 
