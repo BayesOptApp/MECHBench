@@ -834,7 +834,7 @@ class ThreePointBendingModel(AbstractModel):
         inf.write('#{:>10}{:>10}{:>10}{:>10}\n'.format("node_ID","Slide", "grnod_ID1", "grnod_ID2"))
         inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(self.wall_n_id,'0','0', '0'))
         inf.write('#           D_search                fric            Diameter                ffac       ifq\n')
-        inf.writelines("{:>20}{:>20}{:>20}{:>20}{:>10}\n".format('1e20','1', self.impactor_diameter, '0','0'))
+        inf.writelines("{:>20}{:>20}{:>20}{:>20}{:>10}\n".format('100000','1', self.impactor_diameter, '0','0'))
         inf.write('#               Mass                VX_0                VY_0                VZ_0\n')
         inf.writelines("{:>20}{:>20}{:>20}{:>20}\n".format(str(self.rigid_mass), '0.0', '0.0', self.wall_vel))
         inf.write('#               X_M1                Y_M1                Z_M1\n')
