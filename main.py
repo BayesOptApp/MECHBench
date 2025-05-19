@@ -21,7 +21,6 @@ if linux_system:
     orss_main_path = "/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/"
     
 else:
-    #batch_file_path = "D:/OpenRadioss/win_scripts_mk3/openradioss_run_script_ps.bat"
     orss_main_path = "C:/Users/iolar/Downloads/OpenRadioss_win64_2/OpenRadioss/"
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
