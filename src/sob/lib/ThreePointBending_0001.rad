@@ -2,12 +2,12 @@
 #---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|
 /ANIM/DT
 #   TSTART     TFREQ
-0.000000 0.000250
+0.000000 0.000300
 /ANIM/SHELL/EPSP/UPPER
 /MON/ON
 /PRINT/-500/55
 /RUN/test_3_point_bending/1/
-                0.01
+                0.03
 /STOP
 # Emax Mmax Nmax NTH NANIM NERR_POSIT
 0 0 0 1 1 1
@@ -16,7 +16,7 @@
 /TFILE/4
 /TH/TITLE
 #            dT_HIS
-0.000010
+0.00010
 #/VERS/2023
 /ANIM/VECT/VEL
 /ANIM/VECT/DISP
