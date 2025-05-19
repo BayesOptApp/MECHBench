@@ -184,13 +184,26 @@ class StarBoxMesh(AbstractMeshSettings):
         """
         if self.dimension == 1:
             length = self.variable_array[0] / 2
-            return np.array([[-length, length], [length, length],
-                                      [length, -length], [-length, -length]])
+            return np.array([[-length, length],
+                             [0, length] ,
+                             [length, length],
+                             [length, 0],
+                             [length, -length],
+                             [0, -length], 
+                             [-length, -length],
+                             [-length, 0]])
+        
         elif self.dimension in [2, 3]:
             length = self.variable_array[0] / 2
             width = self.variable_array[1] / 2
-            return np.array([[-length, width], [length, width],
-                                      [length, -width], [-length, -width]])
+            return np.array([[-length, width],
+                             [0, width],
+                             [length, width],
+                             [length, 0],
+                             [length, -width],
+                             [0, -width], 
+                             [-length, -width],
+                             [-length, 0]])
         elif self.dimension >= 4:
             return self._create_grid_pts_Hunkler()
         else:

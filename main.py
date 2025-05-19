@@ -32,12 +32,12 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 }
 
 def main():
-    a = sob.get_problem(2,10,"load_uniformity",runnerOptions,sequential_id_numbering=False)
+    a = sob.get_problem(1,2,"mass",runnerOptions,sequential_id_numbering=False)
     #vector = [5]
     #vector = np.hstack((([2,3,2.5,2.5]),([5]*5),([-3.5]*20))).tolist()
     #vector = [-5,-5,-1,-1,1.5]
-    vector = [-5,-5,-5,-5,-5,5,5,5,5,5]
-    intrusion1 = a(vector,251)
+    vector = [2.5,-1]
+    intrusion1 = a(vector,253)
     print(intrusion1)
     
 
