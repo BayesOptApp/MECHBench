@@ -21,20 +21,18 @@ if linux_system:
     orss_main_path = "/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/"
     
 else:
-    #batch_file_path = "D:/OpenRadioss/win_scripts_mk3/openradioss_run_script_ps.bat"
-    orss_main_path = "D:/OpenRadioss/win_scripts_mk3/openradioss_run_script_ps.bat"
-
+    orss_main_path = "C:/Users/iolar/Downloads/OpenRadioss_win64_2/OpenRadioss/"
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
-                 "np":4,
+                 "np":1,
                  "nt":1,
-                 "h_level":2,
+                 "h_level":1,
                  "gmsh_verbosity":0,
 }
 
 def main():
-    a = sob.get_problem(2,10,["mean_impact_force","intrusion"],runnerOptions,sequential_id_numbering=False)
+    a = sob.get_problem(2,10,"load_uniformity",runnerOptions,sequential_id_numbering=False)
     #vector = [5]
     #vector = np.hstack((([2,3,2.5,2.5]),([5]*5),([-3.5]*20))).tolist()
     #vector = [-5,-5,-1,-1,1.5]

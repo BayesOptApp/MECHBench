@@ -248,7 +248,7 @@ class OptiProblem(ABC):
         return np.abs(np.max(force_data).astype(float))
 
     def mean_force_calculation(self) -> float:
-        if self.sim_status < 2 or self.output_data_frame: 
+        if self.sim_status < 2 or self.output_data_frame is None: 
             self.run_simulation()
             self.load_output_data_frame()
             self.sim_status = 2
