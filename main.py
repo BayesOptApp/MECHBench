@@ -25,14 +25,14 @@ else:
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
-                 "np":1,
+                 "np":4,
                  "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
 }
 
 def main():
-    a = sob.get_problem(1,2,"mass",runnerOptions,sequential_id_numbering=False)
+    a = sob.get_problem(1,2,"intrusion",runnerOptions,sequential_id_numbering=False)
     #vector = [5]
     #vector = np.hstack((([2,3,2.5,2.5]),([5]*5),([-3.5]*20))).tolist()
     #vector = [-5,-5,-1,-1,1.5]

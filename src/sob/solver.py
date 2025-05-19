@@ -111,12 +111,40 @@ def run_radioss(input_file_path:Union[str,Path],
                                         stderr=subprocess.STDOUT,
                                         start_new_session=True))
             else:
-                engine_stdout.append(subprocess.run(args=iCommand,
-                                        cwd=run_env.running_directory,
-                                        #shell=isShell, 
-                                        shell = False,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT))
+                if np_int > 1:
+
+
+                    # Get default number environment variable
+                    envv = run_env.environment()
+                    envv["OMP_NUM_THREADS"] = str(nt_int)
+
+                    engine_stdout.append(subprocess.run(args=iCommand,
+                                            cwd=run_env.running_directory,
+                                            #env=envv,
+                                            #shell=isShell, 
+                                            shell = False,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT,
+                                            start_new_session=True))
+                else:
+                    # Get default number environment variable
+                    envv = run_env.environment()
+                    envv["OMP_NUM_THREADS"] = str(nt_int)
+
+                    engine_stdout.append(subprocess.run(args=iCommand,
+                                            cwd=run_env.running_directory,
+                                            env=envv,
+                                            #shell=isShell, 
+                                            shell = False,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT,
+                                            start_new_session=True))
+            
+        # Check if the engine run was successful
+        for i_stdout in engine_stdout:
+            if i_stdout.returncode != 0:
+                raise Exception("Engine not working: \n"+\
+                                i_stdout.stdout.decode("utf-8"))
 
 
 
