@@ -264,7 +264,11 @@ class OptiProblem(ABC):
         
         if not self.__sequential_id_numbering:
             self.problem_id = problem_id
+        
+        # Set the sim status to 0
+        self.sim_status = 0
 
+        # Generate the input deck
         self.generate_input_deck(variable_array)
 
         def handle_single(key: str) -> float:

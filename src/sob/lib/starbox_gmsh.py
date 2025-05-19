@@ -230,9 +230,9 @@ class Starbox_GMSH(Template_GMSH_Mesh_Constructor):
                 else:
                     # Compute normal
                     if np.remainder(jj,2)==0:
-                        norm_vec = np.linalg.cross(vec,np.asarray([0,0,1]))
+                        norm_vec = np.cross(vec,np.asarray([0,0,1]))
                     else:
-                        norm_vec = np.linalg.cross(vec,np.asarray([0,0,-1]))
+                        norm_vec = np.cross(vec,np.asarray([0,0,-1]))
                     norm_vec = norm_vec/np.linalg.norm(norm_vec,2)
 
                     # Add the points
