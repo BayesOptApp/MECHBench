@@ -101,12 +101,13 @@ def run_radioss(input_file_path:Union[str,Path],
         for iFile in engine_list:
             # Get the command
             iCommand = run_env.get_engine_command(iFile,True)
-            engine_stdout.append(subprocess.run(args=iCommand,#env=run_env.environment(),
+            engine_stdout.append(subprocess.run(args=iCommand,env=run_env.environment(),
                                     cwd=run_env.running_directory,
                                     #shell=isShell, 
                                     shell = False,
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT))
+                                    stderr=subprocess.STDOUT,
+                                    start_new_session=True))
 
 
 
