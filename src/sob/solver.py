@@ -103,13 +103,14 @@ def run_radioss(input_file_path:Union[str,Path],
             iCommand = run_env.get_engine_command(iFile,True)
 
             if platform.system() == 'Windows':
-                engine_stdout.append(subprocess.run(args=iCommand,env=run_env.environment(),
+                engine_stdout.append(subprocess.run(args=iCommand,
+                                        env=run_env.environment(),
                                         cwd=run_env.running_directory,
                                         #shell=isShell, 
                                         shell = False,
+                                        start_new_session=True,
                                         stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT,
-                                        start_new_session=True))
+                                        stderr=subprocess.STDOUT))
             else:
                 if np_int > 1:
 

@@ -572,6 +572,17 @@ class ThreePointBending(OptiProblem):
         
         self.model = ThreePointBendingModel(self.mesh)
         self.model.write_input_file(thickness_array)
+    
+    def mass_calculation(self):
+        r"""
+        This is a refactoring of the mass calculation function, which is
+        used to calculate the mass of the model. The function is called
+        when the simulation is run, and it returns the mass of the model.
+
+        Since the mass is computed in metric tons, then this function
+        converts the mass to kg. 
+        """
+        return super().mass_calculation()*1000.0
 
 
 class CrashTube(OptiProblem):
