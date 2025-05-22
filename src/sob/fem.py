@@ -604,8 +604,7 @@ class StarBoxModel(AbstractModel):
 
 class ThreePointBendingModel(AbstractModel):
     def __init__(self, mesh:object) -> None:
-        self.rigid_mass = 0.086
-        self.rigid_vel = -5000
+
         self.mesh = mesh
         self.mesh.write_mesh_file()
     
@@ -624,14 +623,14 @@ class ThreePointBendingModel(AbstractModel):
         r'''
         Returns the initial kinetic energy
         '''
-        return (self.rigid_mass*1000)*(self.rigid_vel/1000)**2/2
+        return (self.wall_mass*1000)*(self.wall_vel/1000)**2/2
     
     @property
     def wall_loc(self)->float:
         r"""
         Returns the wall location
         """
-        return 80.0
+        return 77.5
     
     @property
     def wall_mass(self)->float:
@@ -646,13 +645,15 @@ class ThreePointBendingModel(AbstractModel):
         Returns the wall velocity
         """
         return -10000.0
+        #return -11111.11111
+        #return -10277.777777778
     
     @property
     def impactor_diameter(self)->float:
         r"""
         Returns the impactor diameter
         """
-        return 75.0
+        return 70.0
     
     @property
     def material_density(self)->float:
@@ -831,12 +832,12 @@ class ThreePointBendingModel(AbstractModel):
                 '0.0', '0.0', str(self.wall_loc)))
         inf.write('/RWALL/CYL/1\n')
         inf.write('IMPACTOR\n')
-        inf.write('#{:>10}{:>10}{:>10}{:>10}\n'.format("node_ID","Slide", "grnod_ID1", "grnod_ID2"))
+        inf.write('#{:>9}{:>10}{:>10}{:>10}\n'.format("node_ID","Slide", "grnod_ID1", "grnod_ID2"))
         inf.writelines("{:>10}{:>10}{:>10}{:>10}\n".format(self.wall_n_id,'0','0', '0'))
         inf.write('#           D_search                fric            Diameter                ffac       ifq\n')
-        inf.writelines("{:>20}{:>20}{:>20}{:>20}{:>10}\n".format('100000','1', self.impactor_diameter, '0','0'))
+        inf.writelines("{:>20}{:>20}{:>20}{:>20}{:>10}\n".format(2*self.impactor_diameter,'1', self.impactor_diameter, '0','0'))
         inf.write('#               Mass                VX_0                VY_0                VZ_0\n')
-        inf.writelines("{:>20}{:>20}{:>20}{:>20}\n".format(str(self.rigid_mass), '0.0', '0.0', self.wall_vel))
+        inf.writelines("{:>20}{:>20}{:>20}{:>20}\n".format(str(self.wall_mass), '0.0', '0.0', self.wall_vel))
         inf.write('#               X_M1                Y_M1                Z_M1\n')
         inf.writelines("{:>20}{:>20}{:>20}\n".format('0.0', '100.0', str(self.wall_loc)))
         # inf.write('*RIGIDWALL_PLANAR_ID\n') 
@@ -885,20 +886,51 @@ class ThreePointBendingModel(AbstractModel):
         #inf.write("MATERIAL\n")
         #inf.write('{0:>10}{1:>10}\n'.format(2023,0))
         #inf.write('{0:>20}{1:>20}{2:>20}\n'.format("Mg","mm","s"))
-        inf.write("#\n/MAT/PLAS_JOHNS/1\n")
+        # inf.write("#\n/MAT/PLAS_JOHNS/1\n")
+        # inf.write("Aluminum\n")
+        # inf.write("#              RHO_I\n")
+        # inf.write("{:>20}\n".format(str(self.material_density)))
+        # inf.write("#                  E                  Nu     Iflag\n")
+        # inf.write("{:>20}{:>20}{:>10}\n".format(str(self.mat_young_mod), str(self.mat_poisson_r), '1'))
+        # inf.write("#              SIG_Y                 UTS                EUTS           EPS_p_max            SIG_max0\n")
+        # #inf.write("{:>20}{:>20}{:>20}{:>20}{:>20}\n".format(300, 600, 0.2, '0.0', '0.0'))
+        # inf.write("{:>20}{:>20}{:>20}{:>20}{:>20}\n".format(180, 248.5, 0.4, '0.0', '0.0'))
+        # inf.write("#                  c           EPS_DOT_0       ICC   Fsmooth               F_cut               Chard\n")
+        # inf.write("{:>20}{:>20}{:>10}{:>10}{:>20}{:>20}\n".format(0, 0, 0, 0, 0, 0))
+        # inf.write("#                  m              T_melt              rhoC_p                 T_r\n")
+        # inf.write("{:>20}{:>20}{:>20}{:>20}\n".format(0, 0, 0, 0))
+        inf.write("/FUNCT/1\n")
+        inf.write("Plasticity\n")
+        inf.write("#{:>19}{:>20}\n".format('X', 'Y'))
+        inf.write("{:>20}{:>20}\n".format(0, 180))
+        inf.write("{:>20}{:>20}\n".format(.01, 190))
+        inf.write("{:>20}{:>20}\n".format(.02, 197))
+        inf.write("{:>20}{:>20}\n".format(.05, 211.5))
+        inf.write("{:>20}{:>20}\n".format(.1, 225.8))
+        inf.write("{:>20}{:>20}\n".format(.15, 233.6))
+        inf.write("{:>20}{:>20}\n".format(.2, 238.5))
+        inf.write("{:>20}{:>20}\n".format(.4, 248.5))
+        inf.write("#--------------------------------------------------------------------------------------------------|\n")
+        inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
+        inf.write("#--------------------------------------------------------------------------------------------------|\n")
+        inf.write("#\n/MAT/COWPER/1\n")
         inf.write("Aluminum\n")
+        inf.write("#\n")
         inf.write("#              RHO_I\n")
         inf.write("{:>20}\n".format(str(self.material_density)))
-        inf.write("#                  E                  Nu     Iflag\n")
-        inf.write("{:>20}{:>20}{:>10}\n".format(str(self.mat_young_mod), str(self.mat_poisson_r), '1'))
-        inf.write("#              SIG_Y                 UTS                EUTS           EPS_p_max            SIG_max0\n")
-        #inf.write("{:>20}{:>20}{:>20}{:>20}{:>20}\n".format(300, 600, 0.2, '0.0', '0.0'))
-        inf.write("{:>20}{:>20}{:>20}{:>20}{:>20}\n".format(180, 248.5, 0.4, '0.0', '0.0'))
-        inf.write("#                  c           EPS_DOT_0       ICC   Fsmooth               F_cut               Chard\n")
-        inf.write("{:>20}{:>20}{:>10}{:>10}{:>20}{:>20}\n".format(0, 0, 0, 0, 0, 0))
-        inf.write("#                  m              T_melt              rhoC_p                 T_r\n")
-        inf.write("{:>20}{:>20}{:>20}{:>20}\n".format(0, 0, 0, 0))
-        inf.write("#\n")
+        inf.write("#                  E                  Nu  \n")
+        inf.write("{:>20}{:>20}\n".format(str(self.mat_young_mod), str(self.mat_poisson_r)))
+        inf.write("#{:>10}{:>20}{:>20}{:>20}{:>20}\n".format("a", "b","n", "C_hard", "sigma_max_0"))
+        #inf.write("{:>20}{:>20}{:>20}{:>20}{:>20}\n".format(0, 0, 1.0, 1, str(1e+19)))
+        inf.write("{:>20}{:>20}{:>20}{:>20}{:>20}\n".format(0, 0, 1.0, 1, 0))
+        inf.write("#{:>10}{:>20}{:>10}{:>10}{:>20}{:>20}\n".format("c", "p","ICC", "F_smooth", "F_cut", "VP"))
+        #inf.write("{:>20}{:>20}{:>10}{:>10}{:>20}{:>20}\n".format(0, 1.0, 1, 0, str(1e20), 2))
+        inf.write("{:>20}{:>20}{:>10}{:>10}{:>20}{:>20}\n".format(0, 1.0, 1, 0, 0, 2))
+        inf.write("#{:>10}{:>20}{:>20}\n".format("e_p^max", "e_t1","e_t2"))
+        #inf.write("{:>20}{:>20}{:>20}\n".format(str(1e+20), str(1e+20),str(2*1e+20)))
+        inf.write("{:>20}{:>20}{:>20}\n".format(str(0), str(0),str(0)))
+        inf.write("#{:>9}{:>30}\n".format("fct_Idy","F_scale_y"))
+        inf.write("{:>10}{:>30}\n".format(1,1.0))
         inf.write("#--------------------------------------------------------------------------------------------------|\n")
         inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
         inf.write("#--------------------------------------------------------------------------------------------------|\n")
@@ -912,17 +944,7 @@ class ThreePointBendingModel(AbstractModel):
         inf.write("#--------------------------------------------------------------------------------------------------|\n")
         inf.write("#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|\n")
         inf.write("#--------------------------------------------------------------------------------------------------|\n")
-        inf.write("#/FUNCT/1\n")
-        inf.write("Plasticity\n")
-        inf.write("{:>20}{:>20}\n".format('X', 'Y'))
-        inf.write("{:>20}{:>20}\n".format(0, 180))
-        inf.write("{:>20}{:>20}\n".format(.01, 190))
-        inf.write("{:>20}{:>20}\n".format(.02, 197))
-        inf.write("{:>20}{:>20}\n".format(.05, 211.5))
-        inf.write("{:>20}{:>20}\n".format(.1, 225.8))
-        inf.write("{:>20}{:>20}\n".format(.15, 233.6))
-        inf.write("{:>20}{:>20}\n".format(.2, 238.5))
-        inf.write("{:>20}{:>20}\n".format(.4, 248.5))
+
 
         # inf.writelines("""
         # /MAT/PLAS_JOHNS/1
@@ -999,7 +1021,7 @@ class ThreePointBendingModel(AbstractModel):
         inf.write("/INTER/TYPE25/1\n")
         inf.write("self_contact\n")
         inf.write("# Surf_ID1  Surf_ID2      Istf      Ithe      Igap   Irem_i2                Idel     Iedge\n")
-        inf.write("         4         4         0         0         0         0                   0         0\n")
+        inf.write("         4         0         0         0         0         0                   0         0\n")
         inf.write("# grnd_IDS                     Gap_scale          %mesh_size           Gap_max_s           Gap_max_m\n")
         inf.write("         0                             0                   0                   0                   0\n")
         inf.write("#              Stmin               Stmax     Igap0    Ishape          Edge_angle\n")
