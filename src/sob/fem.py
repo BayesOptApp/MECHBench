@@ -618,12 +618,8 @@ class ThreePointBendingModel(AbstractModel):
         Returns the wall node id
         """
         return 99999
-    @property
-    def absorbed_energy(self):
-        r'''
-        Returns the initial kinetic energy
-        '''
-        return (self.wall_mass*1000)*(self.wall_vel/1000)**2/2
+
+
     
     @property
     def wall_loc(self)->float:
@@ -633,7 +629,7 @@ class ThreePointBendingModel(AbstractModel):
         return 77.5
     
     @property
-    def wall_mass(self)->float:
+    def rigid_mass(self)->float:
         r"""
         Returns the wall mass (in metric tons)
         """
@@ -680,6 +676,12 @@ class ThreePointBendingModel(AbstractModel):
     @property
     def impactor_offset(self)->float:
         return 2.50
+    
+    def absorbed_energy(self):
+        r'''
+        Returns the initial kinetic energy
+        '''
+        return (self.rigid_mass*1000)*(self.wall_vel/1000)**2/2
 
     def merge_files(self, output_file, input_files):
         # Function to merge multiple files into one
@@ -837,7 +839,7 @@ class ThreePointBendingModel(AbstractModel):
         inf.write('#           D_search                fric            Diameter                ffac       ifq\n')
         inf.writelines("{:>20}{:>20}{:>20}{:>20}{:>10}\n".format(2*self.impactor_diameter,'1', self.impactor_diameter, '0','0'))
         inf.write('#               Mass                VX_0                VY_0                VZ_0\n')
-        inf.writelines("{:>20}{:>20}{:>20}{:>20}\n".format(str(self.wall_mass), '0.0', '0.0', self.wall_vel))
+        inf.writelines("{:>20}{:>20}{:>20}{:>20}\n".format(str(self.rigid_mass), '0.0', '0.0', self.wall_vel))
         inf.write('#               X_M1                Y_M1                Z_M1\n')
         inf.writelines("{:>20}{:>20}{:>20}\n".format('0.0', '100.0', str(self.wall_loc)))
         # inf.write('*RIGIDWALL_PLANAR_ID\n') 
