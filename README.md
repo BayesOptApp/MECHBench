@@ -13,13 +13,10 @@ The structural optimization benchmark project aims to provide a framework for im
 
 ### Three-Point Bending (Problem 2)
 
-![Description of the Image](three_point_bending_diagram.png)
+![Image of the Three Point Bending Problem](three_point_bending_diagram.png)
 
 ### CrashTube (Problem 3)
-
-
-
-
+![Image of the Crash Tube Problem](crashtube_diagram.png)
 
 
 ## Project Structure
@@ -35,7 +32,7 @@ The project is structured as follows:
   - `solver.py`: A function to perform calls to OpenRadioss (starter and engine)
   - `post_processing.py`: Provides tools for post-processing FEM simulation results.
   - `utils/`: A directory containing utilities for setting up the simulations.
-      - `run_openradoss`: Module which contains the class `RunOpenRadioss` which generates the commands to run OpenRadioss as well as external executables (`TH_TO_CSV`,`ANIM_TO_VTK`).
+      - `run_openradioss`: Module which contains the class `RunOpenRadioss` which generates the commands to run OpenRadioss as well as external executables (`TH_TO_CSV`,`ANIM_TO_VTK`).
       - `solver_setup`: Contains the class `RunnerOptions`, which is an extension of a dictionary to set up the runs. The required keys of the dictionary to set up the cases are contained there.
   - `lib/`: A directory containing supplementary files and libraries.
       - `py_mesh.py`: A file with functions related to mesh generation (for starbox model). **Deprecated**
