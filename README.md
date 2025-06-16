@@ -11,11 +11,14 @@ The structural optimization benchmark project aims to provide a framework for im
 
 ### Starbox (Problem 1)
 
+![Image of the Star Box Problem](starbox_diagram.png)
+
 ### Three-Point Bending (Problem 2)
 
 ![Image of the Three Point Bending Problem](three_point_bending_diagram.png)
 
 ### CrashTube (Problem 3)
+
 ![Image of the Crash Tube Problem](crashtube_diagram.png)
 
 
