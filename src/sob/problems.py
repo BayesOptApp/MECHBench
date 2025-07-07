@@ -273,13 +273,37 @@ class OptiProblem(ABC):
 
         def handle_single(key: str) -> float:
             return {
+
                 'mass': self.mass_calculation,
+
                 'absorbed_energy': self.absorbed_energy_calculation,
+
                 'intrusion': self.instrusion_calculation,
+
                 'mean_impact_force': self.mean_force_calculation,
+
                 'max_impact_force': self.peak_force_calculation,
+
                 'specific_energy': lambda: self.absorbed_energy_calculation() / self.mass_calculation(),
-                'load_uniformity': lambda: abs(self.peak_force_calculation() / self.mean_force_calculation())
+
+                'load_uniformity': lambda: abs(self.peak_force_calculation() / self.mean_force_calculation()),
+
+                'penalized_sea': lambda: -(
+
+                    self.absorbed_energy_calculation() / self.mass_calculation()
+
+                    if self.instrusion_calculation() <= 60
+
+                    else -100 * (self.instrusion_calculation() - 60)),
+
+                'penalized_mass': lambda: (self.mass_calculation()
+
+                                           if self.instrusion_calculation() <= 50
+
+                                           else 4.25952 + 10 * (self.instrusion_calculation() / 50 - 1))
+
+
+
             }.get(key, lambda: np.nan)()
 
         if isinstance(self.output_data, str):
