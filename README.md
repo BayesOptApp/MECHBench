@@ -50,6 +50,8 @@ The project is structured as follows:
 2. In the `main.py`, you should point the path to the OpenRadioss directory in order to run the code.
 3. Have fun.
 
+## Setting up cases
+
 ## Contact constributors
 - Ivan Olarte Rodriguez (ivan.olarte.rodriguez@liacs.leidenuniv.nl) *Main Contact*
 - Maria Laura Santoni (maria-laura.santoni@lip6.fr) *Main Contact*
