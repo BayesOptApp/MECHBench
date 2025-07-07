@@ -51,7 +51,10 @@ The project is structured as follows:
 3. Have fun.
 
 ## Contact constributors
-- Maria Laura Santoni (maria-laura.santoni@lip6.fr) *Main Contact*
-- Feifan Li (feifan.li@tum.de)
 - Ivan Olarte Rodriguez (ivan.olarte.rodriguez@liacs.leidenuniv.nl) *Main Contact*
+- Maria Laura Santoni (maria-laura.santoni@lip6.fr) *Main Contact*
 - Elena Raponi (e.raponi@liacs.leidenuniv.nl)
+
+## Other contributors
+- Feifan Li (feifan.li@tum.de)
+
