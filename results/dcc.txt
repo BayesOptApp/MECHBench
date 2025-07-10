@@ -1,0 +1,44 @@
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#                                   Control                                   $
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+/TH/MODE/1
+intrusionTrackModes
+#     var1      var2      var3      var4      var5      var6      var7      var8      var9     var10
+       DEF
+#     Obj1      Obj2      Obj3      Obj4      Obj5      Obj6      Obj7      Obj8      Obj9     Obj10
+         1        
+#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|
+/TH/NODE/1
+intrusionTrack
+#     var1      var2      var3      var4      var5      var6      var7      var8      var9     var10
+         A         D         V         
+#    NODid     Iskew                                           NODname
+     99999         0                                     IntrusionNode
+#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|
+/TH/RWALL/2
+TH_RWALL
+#     var1      var2      var3      var4      var5      var6      var7      var8      var9     var10
+       DEF       
+#     Obj1      Obj2      Obj3      Obj4      Obj5      Obj6      Obj7      Obj8      Obj9     Obj10
+         1
+#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|
+#
+#---1----|----2----|----3----|----4----|----5----|----6----|----7----|----8----|----9----|---10----|
+#--------------------------------------------------------------------------------------------------|
+#
+/INTER/TYPE25/1
+self_contact
+# Surf_ID1  Surf_ID2      Istf      Ithe      Igap   Irem_i2                Idel     Iedge
+         4         4         0         0         0         0                   0         0
+# grnd_IDS                     Gap_scale          %mesh_size           Gap_max_s           Gap_max_m
+         0                             0                   0                   0                   0
+#              Stmin               Stmax     Igap0    Ishape          Edge_angle
+                   0                   0         0         0                   0
+#              Stfac                Fric           Tpressfit              Tstart               Tstop
+                   0                  .9                   0                   0                   0
+#      IBC               IVIS2    Inacti               ViscS    Ithick                          Pmax
+       000                   0         0                   0         0                             0
+#    Ifric    Ifiltr               Xfreq             sens_ID                                 fric_ID
+         0         0                   0                   0                                       0
+#enddata
+/END
