@@ -311,7 +311,7 @@ class StarBoxMesh(AbstractMeshSettings):
         elif self.dimension in [1,2,4]:
             self.thickness.append(temp_thickness)
 
-        elif self.dimension >5 and self.dimension <= 35:
+        elif self.dimension >5 and self.dimension < 35:
             # Set some arrays which will be interpolated
 
             init_pos = self.elsize/2/2**(self.h_level-1)
@@ -1004,11 +1004,6 @@ class ThreePointBendingMesh(AbstractMeshSettings):
         return thickness_dicts
 
 
-
-        
-
-
-    
     def volume(self):
         # Calculate the distance between consecutive vertices
         distances = np.linalg.norm(np.diff(self.grid_pts, axis=0, append=[self.grid_pts[0]]), axis=1)
@@ -1084,8 +1079,6 @@ class ThreePointBendingMesh(AbstractMeshSettings):
 
 
         THICKNESS_MAPS = self.generate_thickness_profiles()
-
-
 
 
         # Build the full data structure

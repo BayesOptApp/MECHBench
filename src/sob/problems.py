@@ -528,7 +528,7 @@ class ThreePointBending(OptiProblem):
         # 3 -> the first, middle, and last shell thickness vary. 
         # 4 -> expect for middle shell, the other 4 shell thickness vary.
         # 5 -> all three shell thickness vary.
-        variable_ranges_map = { ii + 1 : [(-5, 5)]*ii for ii in range(48)}
+        variable_ranges_map = { ii + 1 : [(-5, 5)]*ii for ii in range(40)}
         
         self.variable_ranges = variable_ranges_map[self.dimension]
         self.variable_range = (0.5, 3)
