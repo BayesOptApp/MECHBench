@@ -15,8 +15,9 @@ from .fem import *
 ### THESE ARE CONSTANTS TO DETERMINE THE OUTPUTS (OBJECTIVES) OF THE PROBLEM
 ### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-__PRINCIPAL_OUTPUTS:tuple = ("mass", "absorbed_energy","intrusion","mean_impact_force","max_impact_force")
-__COMPOSITE_OUTPUTS:tuple = ("specific_energy","usage_ratio","load_uniformity")
+_PRINCIPAL_OUTPUTS:tuple = ("mass", "absorbed_energy","intrusion","mean_impact_force","max_impact_force")
+_COMPOSITE_OUTPUTS:tuple = ("specific_energy_absorbed","usage_ratio","load_uniformity")
+_PROBLEM_SPECIFIC_OUTPUTS:tuple = ("penalized_sea","penalized_mass")
 
 class OptiProblem(ABC):
     r'''
@@ -31,8 +32,8 @@ class OptiProblem(ABC):
                  sequential_id_numbering:bool=True) -> None:
         
         
-        self.__dimension:int = dimension
-        self.__output_data:Union[Iterable,str] = output_data
+        self.dimension:int = dimension
+        self.output_data:Union[Iterable,str] = output_data
         self.__sequential_id_numbering:bool = sequential_id_numbering
 
         # Assign the Properties to the case
@@ -284,7 +285,7 @@ class OptiProblem(ABC):
 
                 'max_impact_force': self.peak_force_calculation,
 
-                'specific_energy': lambda: self.absorbed_energy_calculation() / self.mass_calculation(),
+                'specific_energy_absorbed': lambda: self.absorbed_energy_calculation() / self.mass_calculation(),
 
                 'load_uniformity': lambda: abs(self.peak_force_calculation() / self.mean_force_calculation()),
 
@@ -336,13 +337,24 @@ class OptiProblem(ABC):
     def dimension(self)->int:
         return self.__dimension
     
+    @dimension.setter
+    def dimension(self, new_dimension:int)->None:
+        if not isinstance(new_dimension,int):
+            raise TypeError("The type of the object is not correct")
+        
+        else:
+            if new_dimension <= 0:
+                raise ValueError("The value must be greater than 0")
+            # Assign the new dimension
+            self.__dimension = new_dimension
+    
     @property
     def batch_file_path(self)->str:
         return self._runner_options('open_radioss_main_path')
     
     @property
     def output_data(self)->Union[List[str],str]:
-        return self.__output_data
+        return self._output_data
     
     @property
     def sequential_id_numbering(self):
@@ -368,10 +380,11 @@ class OptiProblem(ABC):
 
         # CASE 1: Check the output data is a string
         if isinstance(new_output_data,str):
-            if ((new_output_data.strip().lower() in __COMPOSITE_OUTPUTS) or 
-                (new_output_data.strip().lower() in __PRINCIPAL_OUTPUTS)):
+            if ((new_output_data.strip().lower() in _COMPOSITE_OUTPUTS) or 
+                (new_output_data.strip().lower() in _PRINCIPAL_OUTPUTS) or
+                (new_output_data.strip().lower() in _PROBLEM_SPECIFIC_OUTPUTS)):
                 # Assign
-                self.__output_data = new_output_data
+                self._output_data = new_output_data
             else:
                 raise ValueError("The output data is not defined as an output")
         elif isinstance(new_output_data,(list,List[str])):
@@ -382,8 +395,9 @@ class OptiProblem(ABC):
             for idx, elem in enumerate(new_output_data):
 
                 try:
-                    if not ((elem.strip().lower() in __COMPOSITE_OUTPUTS) or 
-                    (elem.strip().lower() in __PRINCIPAL_OUTPUTS)):
+                    if not ((elem.strip().lower() in _COMPOSITE_OUTPUTS) or 
+                    (elem.strip().lower() in _PRINCIPAL_OUTPUTS) or 
+                    (elem.strip().lower() in _PROBLEM_SPECIFIC_OUTPUTS)):
                         idx_to_remove.append(idx)
                 except Exception as e:
                     print("The list of output data is not correctly set as a list of strings")
@@ -399,7 +413,7 @@ class OptiProblem(ABC):
                 
             
             # Now try to set the output data
-            self.__output_data = new_output_data
+            self._output_data = new_output_data
                     
     @property
     def model(self)->AbstractModel:
@@ -415,7 +429,7 @@ class OptiProblem(ABC):
     
     @output_data.deleter
     def output_data(self)->None:
-        del self.__output_data
+        del self._output_data
 
 
 
@@ -425,9 +439,27 @@ class StarBox(OptiProblem):
 
     def __init__(self, 
                  dimension, 
-                 output_data, 
                  runner_options:RunnerOptions,
-                 sequential_id_numbering:bool,**kwargs) -> None:
+                 sequential_id_numbering:bool,
+                 output_data:Optional[Union[Iterable,str]],
+                 **kwargs) -> None:
+        r"""
+        The StarBox optimization problem is a structural optimization problem
+        that involves a star-shaped box with varying thicknesses and the dimensions of the star shape.
+        """
+
+        # Get the output data if it is not provided
+        if output_data is None:
+            output_data = "penalized_sea"
+        elif isinstance(output_data, str):
+            if output_data in self.forbidden_output_data:
+                raise ValueError(f"The output data {output_data} is not allowed for the StarBox problem.")
+        elif isinstance(output_data, tuple) or isinstance(output_data, list):
+            for elem in output_data:
+                if elem in self.forbidden_output_data:
+                    raise ValueError(f"The output data {elem} is not allowed for the StarBox problem.")
+
+
         
         super().__init__(dimension, 
                          output_data, 
@@ -438,7 +470,7 @@ class StarBox(OptiProblem):
         # 3 -> rectangular with varying thickness
         # 4 -> star shape
         # 5 -> star shape with varying thickness
-        # 6 - 35 -> star shape with different thickness profiles.
+        # 6 - 34 -> star shape with different thickness profiles.
         
         self.variable_ranges = self._generate_variable_ranges_map(self.dimension)
         self.input_file_name = 'combine.k'
@@ -446,7 +478,6 @@ class StarBox(OptiProblem):
         self.starter_out_file_name = 'combine_0000.out'
 
         # the key of the intrusion in the output csv file
-        #self.track_node_key = 'DATABASE_HISTORY_NODE1000'
         self.track_node_key = 'DATABASE_HISTORY_NODE99999' 
         self.impactor_force_key = "TH-RWALL1"
 
@@ -491,13 +522,30 @@ class StarBox(OptiProblem):
             return base_ranges
 
 
-    def _write_input_file(self, fem_space_variable_array):
+    def _write_input_file(self, fem_space_variable_array)->None:
+        '''
+        Write the input files for the StarBox problem to be processed by OpenRadioss.
+        Args:
+            fem_space_variable_array (list): The array of variables in the actual physical space.
+        Returns:
+            None
+        '''
         self.mesh = StarBoxMesh(fem_space_variable_array,
                                 h_level=self._runner_options('h_level'),
                                 gmsh_verbosity=self._runner_options('gmsh_verbosity')
         )
         self.model = StarBoxModel(self.mesh)
         self.model.write_input_files()
+    
+    @property
+    def forbidden_output_data(self)->List[str]:
+        """
+        Returns a list of forbidden output data for the StarBox problem.
+        """
+        return ['penalized_mass']
+    
+    
+    
     
 
 class ThreePointBending(OptiProblem):
@@ -522,6 +570,18 @@ class ThreePointBending(OptiProblem):
                  output_data, 
                  runner_options:RunnerOptions,
                  sequential_id_numbering:bool) -> None:
+        # Get the output data if it is not provided
+        if output_data is None:
+            output_data = "penalized_mass"
+        elif isinstance(output_data, str):
+            if output_data in self.forbidden_output_data:
+                raise ValueError(f"The output data {output_data} is not allowed for the StarBox problem.")
+        elif isinstance(output_data, tuple) or isinstance(output_data, list):
+            for elem in output_data:
+                if elem in self.forbidden_output_data:
+                    raise ValueError(f"The output data {elem} is not allowed for the StarBox problem.")
+
+        
         super().__init__(dimension, output_data, runner_options,sequential_id_numbering)
         # 1 -> all 5 shell thickness vary with same value. 
         # 2 -> only first and the last shell thickness vary, other fixed with middle value. 
@@ -607,6 +667,14 @@ class ThreePointBending(OptiProblem):
         converts the mass to kg. 
         """
         return super().mass_calculation()*1000.0
+    
+    @property
+    def forbidden_output_data(self)->List[str]:
+        """
+        Returns a list of forbidden output data for the StarBox problem.
+        """
+        return ['penalized_sea']
+
 
 
 class CrashTube(OptiProblem):
@@ -614,7 +682,23 @@ class CrashTube(OptiProblem):
     def __init__(self, dimension, output_data, 
                  runner_options:RunnerOptions,
                  sequential_id_numbering:bool) -> None:
-        super().__init__(dimension, output_data, runner_options ,sequential_id_numbering)
+        
+        # Get the output data if it is not provided
+        if output_data is None:
+            output_data = "load_uniformity"
+        elif isinstance(output_data, str):
+            if output_data in self.forbidden_output_data:
+                raise ValueError(f"The output data {output_data} is not allowed for the StarBox problem.")
+        elif isinstance(output_data, tuple) or isinstance(output_data, list):
+            for elem in output_data:
+                if elem in self.forbidden_output_data:
+                    raise ValueError(f"The output data {elem} is not allowed for the StarBox problem.")
+ 
+        
+        super().__init__(dimension=dimension, 
+                         output_data=output_data, 
+                         runner_options=runner_options ,
+                         sequential_id_numbering=sequential_id_numbering)
 
         ### NOTE: THIS IS THE PREVIOUS DEFINITION
         ### NOTE: JUST WRITTEN FOR COMPARISON 
@@ -653,7 +737,6 @@ class CrashTube(OptiProblem):
         self.input_file_name = 'combine.k'
         self.output_file_name = 'combineT01.csv'
         self.starter_out_file_name = 'combine_0000.out'
-        #self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
         self.track_node_key = 'DATABASE_HISTORY_NODE99999'
         self.impactor_force_key = "TH-RWALL1IMPACTOR"
 
@@ -694,4 +777,11 @@ class CrashTube(OptiProblem):
             variable_ranges_map[dim] = [patterns[i % 3] for i in range(dim)]
         
         return variable_ranges_map[dimension]
+    
+    @property
+    def forbidden_output_data(self)->List[str]:
+        """
+        Returns a list of forbidden output data for the StarBox problem.
+        """
+        return ['penalized_sea', "penalized_mass"]
         

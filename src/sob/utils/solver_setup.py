@@ -319,7 +319,7 @@ class RunnerOptions(dict):
         try:
             if isinstance(val,str):
                 val = val.split('#')[0].strip()  # remove comments
-                if (key.find('filename') or key.find('path')) < 0 and not (key == 'seed' and val.startswith('time')):
+                if (key.find('filename') or key.find('path') or key.find("open_radioss_main_path")) < 0 and not (key == 'seed' and val.startswith('time')):
                         # and key.find('mindx') < 0:
                     val = eval(safe_str(val), global_env, loc)
             # invoke default

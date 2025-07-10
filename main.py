@@ -21,7 +21,7 @@ if linux_system:
     orss_main_path = "/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/"
     
 else:
-    orss_main_path = "C:/Users/iolar/Downloads/OpenRadioss_win64_2/OpenRadioss/"
+    orss_main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
@@ -32,9 +32,9 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 }
 
 def main():
-    sim_id = 253 # Attribute to define the simulation id and connected results folder name
+    sim_id = 254 # Attribute to define the simulation id and connected results folder name
     vector = [2.5,-1] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-    f = sob.get_problem(1,2,"intrusion",runnerOptions,sequential_id_numbering=False)
+    f = sob.get_problem(1,2,runnerOptions,"intrusion",sequential_id_numbering=False)
     obj_value = f(vector,sim_id)
     print(obj_value)
     
