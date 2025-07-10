@@ -162,6 +162,23 @@ def main():
      - Returning the computed objective value(s).
 - `print(obj_value)`: Prints the output for inspection.
 
+**Metrics to Extract**
+
+In the following table you may find all the possible metrics you can extract for the problems. You can either input a sole target metric or define a list (or tuple) with the names of the metrics to extract multiple. With this in mind, if you want to define different optimization problems (extra constraints, or multi-objective) you can extract the variables/metrics in order to tailor your own problem.
+
+| Metric                    | Requires FEM Simulation | Notes                                                              |
+|---------------------------|--------------------------|--------------------------------------------------------------------|
+| `mass`                    | No                       |                                                                    |
+| `absorbed_energy`         | No                       |                                                                    |
+| `intrusion`               | Yes                      | Requires running FEM simulation                                    |
+| `specific-energy-absorbed`| No                       | Computed from `mass` and `absorbed_energy`                         |
+| `mean_impact_force`       | Yes                      | Requires running FEM simulation                                    |
+| `peak-impact-force`       | Yes                      | Requires running FEM simulation                                    |
+| `usage_ratio`             | Yes                      | Requires running FEM simulation, Computed from `mean_impact_force`  and `peak-impact-force`  |
+| `load_uniformity`         | Yes                      | Requires running FEM simulation, Computed from `mean_impact_force`  and `peak-impact-force`  |
+| `penalized_sea`         | Yes                      | Requires running FEM simulation, Computed from `mass` and `absorbed_energy`, only available for Problem 1  |
+| `penalized_mass`         | Yes                      | Requires running FEM simulation, Computed from `mass` and `absorbed_energy`, only available for Problem 2  |
+
 
 ## Contact constributors
 - Ivan Olarte Rodriguez (ivan.olarte.rodriguez@liacs.leidenuniv.nl) 
