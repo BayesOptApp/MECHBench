@@ -783,5 +783,5 @@ class CrashTube(OptiProblem):
         """
         Returns a list of forbidden output data for the StarBox problem.
         """
-        return ['penalized_sea', "penalized_mass"]
+        return ['penalized_sea', "penalized_mass", "absorbed_energy","specific_energy_absorbed"]
         
