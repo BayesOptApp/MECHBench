@@ -32,10 +32,11 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 }
 
 def main():
-    a = sob.get_problem(1,2,"intrusion",runnerOptions,sequential_id_numbering=False)
-    vector = [2.5,-1]
-    intrusion1 = a(vector,253)
-    print(intrusion1)
+    sim_id = 253 # Attribute to define the simulation id and connected results folder name
+    vector = [2.5,-1] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
+    f = sob.get_problem(1,2,"intrusion",runnerOptions,sequential_id_numbering=False)
+    obj_value = f(vector,sim_id)
+    print(obj_value)
     
 
 if __name__ == '__main__':
