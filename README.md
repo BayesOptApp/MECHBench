@@ -13,9 +13,9 @@ The repository currently contains three mechanical benchmark problems: a star-sh
 
 <table>
   <tr>
-    <td><img src="starbox_diagram.png" alt="Star Box Problem" width="300"/></td>
-    <td><img src="three_point_bending_diagram.png" alt="Three Point Bending Problem" width="300"/></td>
-    <td><img src="crashtube_diagram.png" alt="Crash Tube Problem" width="300"/></td>
+    <td><img src="figures/starbox_diagram.png" alt="Star Box Problem" width="300"/></td>
+    <td><img src="figures/three_point_bending_diagram.png" alt="Three Point Bending Problem" width="300"/></td>
+    <td><img src="figures/crashtube_diagram.png" alt="Crash Tube Problem" width="300"/></td>
   </tr>
   <tr>
     <td>Starbox (Problem 1)</td>
