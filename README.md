@@ -34,8 +34,6 @@ The project is structured as follows:
 ```
 MECHBench/
 ├── main.py                      # Main optimization problem script
-├── models/                      # Finite Element models
-├── scripts/                     # Utility scripts
 ├── results/                     # Example output results
 ├── src/
 │   └── sob/                        # Directory containing the core modules of the project
