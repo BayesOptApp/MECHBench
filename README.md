@@ -162,6 +162,20 @@ def main():
      - Returning the computed objective value(s).
 - `print(obj_value)`: Prints the output for inspection.
 
+**Metrics to Extract**
+In the following 
+
+| Metric                    | Requires FEM Simulation | Notes                                                              |
+|---------------------------|--------------------------|--------------------------------------------------------------------|
+| `mass`                    | No                       |                                                                    |
+| `absorbed_energy`         | No                       |                                                                    |
+| `intrusion`               | Yes                      | Requires running FEM simulation                                    |
+| `specific-energy-absorbed`| No                       | Computed from `mass` and `absorbed_energy`                         |
+| `mean_impact_force`       | Yes                      | Requires running FEM simulation                                    |
+| `peak-impact-force`       | Yes                      | Requires running FEM simulation                                    |
+| `usage_ratio`             | Yes                      | Requires running FEM simulation, Computed from `mean_impact_force`  and `peak-impact-force`  |
+| `load_uniformity`         | Yes                      | Requires running FEM simulation, Computed from `mean_impact_force`  and `peak-impact-force`  |
+
 
 ## Contact constributors
 - Ivan Olarte Rodriguez (ivan.olarte.rodriguez@liacs.leidenuniv.nl) 
