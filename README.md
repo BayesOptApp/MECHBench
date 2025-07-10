@@ -34,7 +34,7 @@ The project is structured as follows:
 ```
 MECHBench/
 ├── main.py                      # Main optimization problem script
-├── results/                     # Example output results
+├── results/                     # Example output results (from Three Point Bending Case)
 ├── src/
 │   └── sob/                        # Directory containing the core modules of the project
 │       ├── __init__.py                # Initializes the Python package
