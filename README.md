@@ -1,4 +1,4 @@
-# Structural Optimization Benchmark Project
+# MECHBench: A Set of Optimization Benchmarks inspired by Structural Mechanics
 
 This repository contains a structural optimization benchmark project using OpenRadioss as solver.
 
