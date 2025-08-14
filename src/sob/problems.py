@@ -504,7 +504,7 @@ class ThreePointBending(OptiProblem):
         # 3 -> the first, middle, and last shell thickness vary. 
         # 4 -> expect for middle shell, the other 4 shell thickness vary.
         # 5 -> all three shell thickness vary.
-        variable_ranges_map = { ii + 1 : [(-5, 5)]*ii for ii in range(48)}
+        variable_ranges_map = { ii + 1 : [(-5, 5)]*ii for ii in range(40)}
         
         self.variable_ranges = variable_ranges_map[self.dimension]
         self.variable_range = (0.5, 3)
@@ -629,8 +629,7 @@ class CrashTube(OptiProblem):
         self.input_file_name = 'combine.k'
         self.output_file_name = 'combineT01.csv'
         self.starter_out_file_name = 'combine_0000.out'
-        #self.track_node_key = 'DATABASE_HISTORY_NODE1001' # the key of the intrusion in the output csv file
-        self.track_node_key = 'DATABASE_HISTORY_NODE99999'
+        self.track_node_key = 'DATABASE_HISTORY_NODE99999' # the key of the intrusion in the output csv file
         self.impactor_force_key = "TH-RWALL1IMPACTOR"
 
         if self.sequential_id_numbering:

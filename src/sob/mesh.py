@@ -121,7 +121,7 @@ class StarBoxMesh(AbstractMeshSettings):
 
         # Default values for configuration parameters
         self.default_parameters = {
-            'thickness': 1.2,
+            'thickness': 2.1,
             'elsize': 4,
             'extrusion_length': 120,
             'node_starting_id': 1001,
@@ -205,14 +205,14 @@ class StarBoxMesh(AbstractMeshSettings):
                              [-length, -width],
                              [-length, 0]])
         elif self.dimension >= 4:
-            return self._create_grid_pts_Hunkler()
+            return self._create_grid_pts_Hunkeler()
         else:
             raise NotImplementedError('Invalid dimension. The dimensions of the problem can only be in [1, 35]')
-        
-    def _create_grid_pts_Hunkler(self):
+
+    def _create_grid_pts_Hunkeler(self):
         """
-        this function creates vertices for the hunkler star model. these vertices will
-        be connected by the py_mesh to create the cross section of the crash box, which then 
+        this function creates vertices for the Hunkeler star model. these vertices will
+        be connected by the py_mesh to create the cross section of the crash box, which then
         will be extruded later
         """
         a = self.variable_array[0]
