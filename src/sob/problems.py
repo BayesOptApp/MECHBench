@@ -781,7 +781,7 @@ class CrashTube(OptiProblem):
     @property
     def forbidden_output_data(self)->List[str]:
         """
-        Returns a list of forbidden output data for the StarBox problem.
+        Returns a list of forbidden output data for the Crash Tube problem.
         """
         return ['penalized_sea', "penalized_mass", "absorbed_energy","specific_energy_absorbed"]
         
