@@ -4,8 +4,8 @@ from typing import Optional, Iterable, Union
 
 def get_problem(model_type:int, 
                 dimension:int, 
-                output_data:Union[Iterable,str], 
-                runner_options:RunnerOptions, 
+                runner_options:RunnerOptions,
+                output_data:Optional[Union[Iterable,str]]=None,
                 sequential_id_numbering:bool=True,**kwargs):
     '''
     Generates a problem instance based on the specified model type and configuration.
@@ -26,7 +26,7 @@ def get_problem(model_type:int,
             - 3: Rectangular with varying thickness
             - 4: Star shape
             - 5: Star shape with varying thickness
-            - 6-35: Star shape with different thickness profiles.
+            - 6-34: Star shape with different thickness profiles.
         
         - For model_type = 2 (Three point bending model):
             - 1: All 5 shell thicknesses vary with the same value.
@@ -34,6 +34,7 @@ def get_problem(model_type:int,
             - 3: The first, middle, and last shell thicknesses vary.
             - 4: All shell thicknesses except the middle vary.
             - 5: All shell thicknesses vary.
+            - 6-40: Varying configurations of shell thicknesses with thickness profiles for each rib.
 
         - For model_type = 3 (Crash tube model):
             - 2: Three positions and depths vary together with the same value.
@@ -47,19 +48,36 @@ def get_problem(model_type:int,
         - 'mass'
         - 'absorbed_energy'
         - 'intrusion' (Requires running FEM simulation while 'mass' and 'absorbed_energy' do not require one.)
-        - 'specific-energy' (Computes the SEA by operating the mass and absorbed energy)
+        - 'specific-energy-absorbed' (Computes the SEA by operating the mass and absorbed energy)
+        - 'mean_impact_force' (Requires running FEM simulation)
+        - 'peak-impact-force' (Requires running FEM simulation)
+        - 'usage_ratio' (Requires running FEM simulation)
+        - 'load_uniformity' (Requires running FEM simulation)
+        
 
     runner_options : `RunnerOptions`
         Path to the OpenRadioss batch file.
     '''
     if model_type==1:
-        problem_instance = StarBox(dimension, output_data, runner_options,sequential_id_numbering,**kwargs)
+        problem_instance = StarBox(dimension=dimension, 
+                                   output_data=output_data, 
+                                   runner_options=runner_options,
+                                   sequential_id_numbering=sequential_id_numbering,
+                                   **kwargs)
         return problem_instance
     elif model_type==2:
-        problem_instance = ThreePointBending(dimension, output_data, runner_options,sequential_id_numbering)
+        problem_instance = ThreePointBending(dimension=dimension, 
+                                   output_data=output_data, 
+                                   runner_options=runner_options,
+                                   sequential_id_numbering=sequential_id_numbering,
+                                   **kwargs)
         return problem_instance
     elif model_type==3:
-        problem_instance = CrashTube(dimension, output_data, runner_options,sequential_id_numbering)
+        problem_instance = CrashTube(dimension=dimension, 
+                                   output_data=output_data, 
+                                   runner_options=runner_options,
+                                   sequential_id_numbering=sequential_id_numbering,
+                                   **kwargs)
         return problem_instance
     else:
         raise ValueError('Invalid model type')
