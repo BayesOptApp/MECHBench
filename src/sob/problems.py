@@ -236,6 +236,12 @@ class OptiProblem(ABC):
         else:
             time_vect = df["time"].values
             impulse_vec = df[force_col].values
+
+            # Check if the impulse curve is monotonic
+            if np.all(np.diff(impulse_vec) >= 0) or np.all(np.diff(impulse_vec) <= 0):
+                print("Impulse curve is monotonic (increasing).",flush=True)
+                return impulse_vec
+
             return np.gradient(impulse_vec, time_vect)
 
     def peak_force_calculation(self) -> float:
