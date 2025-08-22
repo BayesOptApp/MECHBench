@@ -2248,3 +2248,4 @@ class ThreePointBendingMesh(AbstractMeshSettings):
         # Use the GMSH pipeline
         self.write_py_mesh_input_2()
         cl = ThreePointBending_GMSH("three_point_bending_mesh")
+        cl("py_mesh_input.json",True)
