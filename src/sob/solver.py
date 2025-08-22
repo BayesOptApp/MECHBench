@@ -77,6 +77,12 @@ def run_radioss(input_file_path:Union[str,Path],
     # Get run command
     starter_command = run_env.get_starter_command()
 
+    ##
+    #print("Running OpenRadioss with the following command:")
+    #print(" ".join(starter_command))
+    #print("Running in directory: ", run_env.running_directory)
+    ##
+
     # Run the starter
     output_starter = subprocess.run(args=starter_command,env=run_env.environment(),
                                     cwd=run_env.running_directory,
@@ -119,14 +125,39 @@ def run_radioss(input_file_path:Union[str,Path],
                     envv = run_env.environment()
                     envv["OMP_NUM_THREADS"] = str(nt_int)
 
-                    engine_stdout.append(subprocess.run(args=iCommand,
+                    ##
+                    print("Running OpenRadioss with the following command:")
+                    print(" ".join(iCommand))
+                    print("Running in directory: ", run_env.running_directory)
+                    ##
+                    if "SLURM_JOB_ID" in os.environ:
+                        # If running in a SLURM environment, use srun
+                        engine_stdout.append(subprocess.run(args=iCommand,
                                             cwd=run_env.running_directory,
-                                            #env=envv,
+                                            env=envv,
                                             #shell=isShell, 
                                             shell = False,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT,
                                             start_new_session=True))
+                    else:
+                        # If not running in a SLURM environment, use mpirun
+                        #engine_stdout.append(subprocess.run(args=iCommand,
+                        #                    cwd=run_env.running_directory,
+                        #                    env=envv,
+                        #                    shell=isShell, 
+                        #                    shell = False,
+                        #                    stdout=subprocess.PIPE,
+                        #                    stderr=subprocess.STDOUT,
+                        #                    start_new_session=True))
+                        engine_stdout.append(subprocess.run(args=iCommand,
+                                                cwd=run_env.running_directory,
+                                                #env=envv,
+                                                #shell=isShell, 
+                                                shell = False,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT,
+                                                start_new_session=True))
                 else:
                     # Get default number environment variable
                     envv = run_env.environment()

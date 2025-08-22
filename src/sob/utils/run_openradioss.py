@@ -42,6 +42,12 @@ from typing import Union, Optional, List
 # Determine the platform (Windows or Linux)
 current_platform = platform.system()
 
+# Determine if there's a SLURM Environment
+if "SLURM_JOB_ID" in os.environ:
+    slurm_environment = True
+else:
+    slurm_environment = False
+
 
 # Tiny tool to get the runid from the file name
 def get_deck_runid(file):
@@ -279,6 +285,7 @@ class RunOpenRadioss():
             mpi='_impi'
         else:
             mpi='_ompi'
+
         if self.np=="1":
             if self.precision == 'sp':
                 engine_exec = os.path.join("exec","engine_"+self.arch+"_sp"+self.bin_extension)
@@ -290,12 +297,20 @@ class RunOpenRadioss():
             if self.precision == 'sp':
                 engine_exec = os.path.join("exec","engine_"+self.arch+mpi+"_sp"+self.bin_extension)
             else:
-                engine_exec = os.path.join("exec","engine_"+self.arch+mpi+self.bin_extension)
+                if not slurm_environment:
+                    engine_exec = os.path.join("exec","engine_"+self.arch+mpi+self.bin_extension)
+                else:
+                    engine_exec = os.path.join("exec","engine_"+self.arch+mpi+self.bin_extension)
+                    #engine_command = ["srun","-n",self.np,os.path.join(self.openradioss_path, engine_exec), "-i", engine_input]
         
             if current_platform == "Windows":
                engine_command = ["mpiexec","-np",self.np,os.path.join(self.openradioss_path, engine_exec), "-i", engine_input]
             else:
-               engine_command = ["mpirun","-np",self.np,os.path.join(self.openradioss_path, engine_exec), "-i", engine_input]
+               if not slurm_environment:
+                   engine_command = ["mpirun","-np",self.np,os.path.join(self.openradioss_path, engine_exec), "-i", engine_input]
+               else:
+                   engine_command = ["mpirun","-np",self.np,os.path.join(self.openradioss_path, engine_exec), "-i", engine_input]
+                   #engine_command = ["srun","-n",self.np,os.path.join(self.openradioss_path, engine_exec), "-i", engine_input]
     
         
         if full_path:
