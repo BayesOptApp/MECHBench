@@ -90,11 +90,11 @@ if __name__ == '__main__':
     args = parse_args()
 
     # Generate the scratchdata directory if it does not exist
-    scratchdata_dir = f"/scratchdata/olarterodriguezi/{args.sim_id}/"
+    scratchdata_dir = f"/scratchdata/olarterodriguezi/problem_{args.problem_type}/{args.sim_id}/"
     if not os.path.exists(scratchdata_dir):
         os.makedirs(scratchdata_dir)
     # Move the main directory to the scratchdata directory
-    os.chdir(f"/scratchdata/olarterodriguezi/{args.sim_id}/")  # Change to the directory where the results will be saved
+    os.chdir(f"/scratchdata/olarterodriguezi/problem_{args.problem_type}/{args.sim_id}")  # Change to the directory where the results will be saved
 
     # Update runnerOptions with parsed arguments
     runnerOptions.update({
