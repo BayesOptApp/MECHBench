@@ -285,7 +285,15 @@ class OptiProblem(ABC):
                 'mean_impact_force': self.mean_force_calculation,
                 'max_impact_force': self.peak_force_calculation,
                 'specific_energy': lambda: self.absorbed_energy_calculation() / self.mass_calculation(),
-                'load_uniformity': lambda: abs(self.peak_force_calculation() / self.mean_force_calculation())
+                'load_uniformity': lambda: abs(self.peak_force_calculation() / self.mean_force_calculation()),
+                'penalized_sea': lambda: -(
+                    self.absorbed_energy_calculation() / self.mass_calculation()
+                    if self.instrusion_calculation() <= 60
+                    else -100 * (self.instrusion_calculation() - 60)),
+
+                'penalized_mass': lambda: (self.mass_calculation()
+                                           if self.instrusion_calculation() <= 50
+                                           else 4.25952 + 10 * (self.instrusion_calculation() / 50 - 1))
             }.get(key, lambda: np.nan)()
 
         if isinstance(self.output_data, str):
@@ -915,7 +923,13 @@ class OptiProblem(ABC):
         else:
             time_vect = df["time"].values
             impulse_vec = df[force_col].values
-            return np.gradient(impulse_vec, time_vect)
+
+            # Check if the impulse curve is monotonic
+            if np.all(np.diff(impulse_vec) >= 0) or np.all(np.diff(impulse_vec) <= 0):
+                print("Impulse curve is monotonic.",flush=True)
+                return np.gradient(impulse_vec, time_vect)
+            else:
+                return impulse_vec
 
     def peak_force_calculation(self) -> float:
         if self.sim_status < 2 or self.output_data_frame is None: 
