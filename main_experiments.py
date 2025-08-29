@@ -25,15 +25,15 @@ Added the following block to identify if the current system
 '''
 
 r'''
-Once the optimization problem instance has been generate, 
+Once the optimization problem instance has been generated, 
 the model is determined (mesh and fem data loaded) only when the variable array has been input.
 '''
 
 linux_system = not (platform.system() == 'Windows')
 
 if linux_system:
-    orss_main_path = "/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/"
-    #orss_main_path = "/home/olarterodriguezi/OpenRadioss_linux64/OpenRadioss/"
+    #orss_main_path = "/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/"
+    orss_main_path = "/home/olarterodriguezi/OpenRadioss_linux64/OpenRadioss/"
     
 else:
     orss_main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
@@ -72,7 +72,7 @@ def parse_args() -> argparse.Namespace:
                         help="Run ID for the simulation.")
     parser.add_argument("--objective_function", type=str, default="load_uniformity",
                         choices=['load_uniformity', 'intrusion', 'absorbed_energy',
-                                 'mass', 'specific-energy-absorbed'],
+                                 'mass', 'specific-energy-absorbed',"penalized_sea","penalized_mass"],
                         help="Objective function to be used in the simulation. Default is 'load_uniformity'.")
     parser.add_argument("--dimension", type=int, choices=[2,5,10,20], default=5,
                         help="Dimension of the problem. Default is 5.")
@@ -105,12 +105,13 @@ if __name__ == '__main__':
     args = parse_args()
 
     # Generate the scratchdata directory if it does not exist
-    #scratchdata_dir = f"/scratchdata/olarterodriguezi/problem_{args.problem_type}/{args.sim_id}/"
-    #if not os.path.exists(scratchdata_dir):
-    #    os.makedirs(scratchdata_dir)
+    scratchdata_dir = f"/scratchdata/olarterodriguezi/problem_{args.problem_type}/{args.optimizer}/{args.dimension}/{args.run_id}"
+    if not os.path.exists(scratchdata_dir):
+        os.makedirs(scratchdata_dir)
     # Move the main directory to the scratchdata directory
-    #os.chdir(f"/scratchdata/olarterodriguezi/problem_{args.problem_type}/{args.sim_id}")  # Change to the directory where the results will be saved
-
+    os.chdir(scratchdata_dir)  # Change to the directory where the results will be saved
+    #os.makedirs(f"/home/olarterodriguezi/MECHBench/results/optimization/MECHBENCH_problem_{args.problem_type}_{args.objective_function}/run_{args.run_id}_{args.optimizer}/ARF/", exist_ok=True)
+    #os.chdir(f"/home/olarterodriguezi/MECHBench/results/optimization/MECHBENCH_problem_{args.problem_type}_{args.objective_function}/run_{args.run_id}_{args.optimizer}/ARF/")  # Change to the directory where the results will be saved    
     # Update runnerOptions with parsed arguments
     runnerOptions.update({
         "open_radioss_main_path": args.orss_main_path,
@@ -152,6 +153,7 @@ if __name__ == '__main__':
     
     # Set up the logger
     logger = ioh.logger.Analyzer(
+        root="/home/olarterodriguezi/MECHBench/results/optimization",
         triggers=[ioh.logger.trigger.ALWAYS],
         additional_properties=[ioh.logger.property.RAWYBEST], # Log the RAW_Y_BEST
         folder_name=f"MECHBENCH_problem_{problem_type}_{objective_function}/run_{args.run_id}_{args.optimizer}",
