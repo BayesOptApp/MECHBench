@@ -1932,7 +1932,6 @@ class CrashTubeMesh(AbstractMeshSettings):
         trigger_depths_2 = (self.trigger_depths[5:])
 
 
-
         dict_1 = {
                 i + 1: {
                     'Y': int(trigger_positions_1[i]),
@@ -1953,9 +1952,6 @@ class CrashTubeMesh(AbstractMeshSettings):
         
         return dict_1, dict_2
 
-
-
-        
 
     def write_py_mesh_input_2(self):
         # These would normally be computed or read from elsewhere

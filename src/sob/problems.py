@@ -242,7 +242,7 @@ class OptiProblem(ABC):
                 print("Impulse curve is not monotonic",flush=True)
                 return impulse_vec
 
-            return np.gradient(impulse_vec, time_vect)
+            return np.diff(impulse_vec) / np.diff(time_vect)
 
     def peak_force_calculation(self) -> float:
         if self.sim_status < 2 or self.output_data_frame is None: 
@@ -1461,7 +1461,7 @@ class CrashTube(OptiProblem):
         - `List[tuple]`: A list of tuples indicating the physical ranges of the problem.
         """
 
-        patterns = [(-10, 10), (-4, 4), (0, 4)]
+        patterns = [(-4, 4), (-10, 10), (0, 4)]
 
         variable_ranges_map = {}
 
