@@ -926,9 +926,11 @@ class OptiProblem(ABC):
 
             # Check if the impulse curve is monotonic
             if np.all(np.diff(impulse_vec) >= 0) or np.all(np.diff(impulse_vec) <= 0):
-                print("Impulse curve is monotonic.",flush=True)
-                return np.gradient(impulse_vec, time_vect)
+                # Monotonic curve which represents an impulse
+                return np.diff(impulse_vec) / np.diff(time_vect)
             else:
+                # If the impulse curve is not monotonic, then it corresponds to a force curve and not
+                # an impulse curve and we return it as is.
                 return impulse_vec
 
     def peak_force_calculation(self) -> float:
