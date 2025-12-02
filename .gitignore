@@ -9,10 +9,6 @@ __pycache__/
 *.vtk
 *.k
 
-# ---- Text files ----
-# ignore all text files
-*.txt
-
 # (Optional) keep specific text files:
 # !README.txt
 # !config.txt
