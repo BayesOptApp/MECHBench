@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from .mesh import StarBoxMesh,CrashTubeMesh
+from src.sob.mesh import StarBoxMesh,CrashTubeMesh
 from abc import ABC, abstractmethod
 
 

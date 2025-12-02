@@ -1,5 +1,5 @@
-from .problems import *
-from.utils.solver_setup import RunnerOptions
+from src.sob.problems import *
+from src.sob.utils.solver_setup import RunnerOptions
 from typing import Optional, Iterable, Union
 
 def get_problem(model_type:int, 

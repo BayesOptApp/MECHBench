@@ -2,13 +2,13 @@ import numpy as np
 import os
 from copy import deepcopy
 from abc import ABC, abstractmethod
-from .lib.py_mesh import py_mesh
-from .lib.py_mesh_v2 import py_mesh_v2
-from .lib.starbox_gmsh import Starbox_GMSH
-from .lib.crashtube_gmsh import Crashtube_GMSH
-from .lib.three_point_bending_gmsh import ThreePointBending_GMSH
+from src.sob.lib.py_mesh import py_mesh
+from src.sob.lib.py_mesh_v2 import py_mesh_v2
+from src.sob.lib.starbox_gmsh import Starbox_GMSH
+from src.sob.lib.crashtube_gmsh import Crashtube_GMSH
+from src.sob.lib.three_point_bending_gmsh import ThreePointBending_GMSH
 from typing import Union, List, Optional
-from .lib.crashtube_gmsh import Crashtube_GMSH
+from src.sob.lib.crashtube_gmsh import Crashtube_GMSH
 from typing import Union, List, Optional
 import json
 

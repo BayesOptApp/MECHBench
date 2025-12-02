@@ -4,7 +4,7 @@ import psutil
 import platform
 from pathlib import Path
 from typing import Union
-from .utils.run_openradioss import RunOpenRadioss
+from src.sob.utils.run_openradioss import RunOpenRadioss
 
 
 def run_radioss(input_file_path:Union[str,Path], 
