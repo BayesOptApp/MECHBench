@@ -1,0 +1,41 @@
+# ---- Python ignores ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.punch
+
+# ---- VTK / Radioss / Simulation files ----
+*.vtk
+*.k
+
+# ---- Text files ----
+# ignore all text files
+*.txt
+
+# (Optional) keep specific text files:
+# !README.txt
+# !config.txt
+
+# ---- OS / Editor ----
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# ---- Virtual environments ----
+venv/
+.env/
+.venv/
+
+# ---- Build / cache ----
+build/
+dist/
+*.egg-info/
