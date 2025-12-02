@@ -1715,7 +1715,7 @@ class CrashTubeMesh(AbstractMeshSettings):
             Generalized for dimensions from 2 up to 30.
 
             variable_array is assumed to follow the repeating pattern:
-            [position_1, depth_1, height_1, position_2, depth_2, height_2, ...]
+            [depth_1, position_1, height_1, depth_2, position_2, height_2, ...]
 
             Returns
             ------------------------
@@ -1740,12 +1740,12 @@ class CrashTubeMesh(AbstractMeshSettings):
 
         for i in range(num_vars):
             group_index = i//3   # 0, 1, 2 for each trigger group
-            role_index = np.remainder(i, 3)                # 0: position, 1: depth, 2: height
+            role_index = np.remainder(i, 3)                # 0: depth, 1: position, 2: height
 
             if role_index == 0:
-                trigger_positions[group_index] = self.variable_array[i]
-            elif role_index == 1:
                 trigger_depths[group_index] = self.variable_array[i]
+            elif role_index == 1:
+                trigger_positions[group_index] = self.variable_array[i]
             elif role_index == 2:
                 trigger_heights[group_index] = self.variable_array[i]
 
