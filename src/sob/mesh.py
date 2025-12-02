@@ -1907,29 +1907,33 @@ class CrashTubeMesh(AbstractMeshSettings):
         # Transform the list of trigger positions and trigger heights into by mapping
         # into "physical space" and not defined by the mesh.
 
-        n_elements_z = self.extrusion_length / self.elsize
+        n_elements_z = int(self.extrusion_length / self.elsize)
 
 
         # Make a list of the positions in "mesh definition" of each trigger
         
         end_points_segments = np.linspace(0, n_elements_z, num=6, endpoint=True)
 
+        # Get the neutral points of each segment
         neutral_points_segments = end_points_segments[:-1] + (end_points_segments[1:] - end_points_segments[:-1]) / 2
-        neutral_points_segments = np.tile(neutral_points_segments, (2, 1)).flatten()
+        neutral_points_segments = np.tile(np.flip(neutral_points_segments), (2, 1)).flatten()
 
         # Get the trigger positions in the mesh definition
         trigger_positions_complete = np.add(np.round(self.trigger_positions,
                                                      decimals=0), neutral_points_segments)
 
         # Get splitted 
-        trigger_positions_1 = (trigger_positions_complete[:5]*self.elsize).astype(int)
-        trigger_positions_2 = (trigger_positions_complete[5:]*self.elsize).astype(int)
+        # NOTE: The flips is to ensure that the triggers are defined from top to bottom
+        # 02/12/2025 - Adopted to match with the definition shown in the first
+        #              version of the MECHBench paper in ArXiv
+        trigger_positions_1 = np.flip((trigger_positions_complete[:5]*self.elsize)).astype(int)
+        trigger_positions_2 = np.flip((trigger_positions_complete[5:]*self.elsize)).astype(int)
 
-        trigger_heights_1 = (np.round(self.trigger_heights[:5],0)*self.elsize).astype(int)
-        trigger_heights_2 = (np.round(self.trigger_heights[5:], 0)*self.elsize).astype(int)
+        trigger_heights_1 = np.flip((np.round(self.trigger_heights[:5],0)*self.elsize).astype(int))
+        trigger_heights_2 = np.flip((np.round(self.trigger_heights[5:], 0)*self.elsize).astype(int))
 
-        trigger_depths_1 = (self.trigger_depths[:5])
-        trigger_depths_2 = (self.trigger_depths[5:])
+        trigger_depths_1 = np.flip(self.trigger_depths[:5]).astype(float)
+        trigger_depths_2 = np.flip(self.trigger_depths[5:]).astype(float)
 
 
         dict_1 = {
@@ -2109,12 +2113,40 @@ class ThreePointBendingMesh(AbstractMeshSettings):
             variable_array = [1.7,variable_array[0],variable_array[1],variable_array[2],variable_array[3]]
 
 
-        # Initialize the storing bins
+        # Initialize t
+        # 
+        # he storing bins
         bins = [[] for _ in range(5)]
 
+        multiplier = len(variable_array)//5
+
         for i, val in enumerate(variable_array):
-            bins[i % 5].append(val)
+            # These changes are to match the definition
+            # described in the MECHBench paper in ArXiv.
+
+            if i+1 <= 5*multiplier:
+                bins[i % 5].append(val)
+            else:
+                break
         
+        # Assign the thicknesses to each bin for the missing values
+        if self.dimension > 5:
+            unassigned_variables = variable_array[5*multiplier:]
+            if len(unassigned_variables)==1:
+                bins[0].append(unassigned_variables[0])
+            elif len(unassigned_variables)==2:
+                bins[3].append(unassigned_variables[0])
+                bins[4].append(unassigned_variables[1])
+            elif len(unassigned_variables)==3:
+                bins[0].append(unassigned_variables[0])
+                bins[3].append(unassigned_variables[1])
+                bins[4].append(unassigned_variables[2])
+            elif len(unassigned_variables)==4:
+                bins[1].append(unassigned_variables[0])
+                bins[2].append(unassigned_variables[1])
+                bins[3].append(unassigned_variables[2])
+                bins[4].append(unassigned_variables[3])
+
         thickness_array = []
         for i,iBin in enumerate(bins):
             thickness_array.append(return_list_of_thicknesses(iBin))
