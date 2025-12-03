@@ -4,7 +4,7 @@ from src.sob.mesh import StarBoxMesh,CrashTubeMesh
 from abc import ABC, abstractmethod
 
 
-class AbstractModel(ABC):
+class AbstractFEMModel(ABC):
     r"""
     This is a class used to define the methods and properties of
     the Setup Cards for each of the methods
@@ -69,7 +69,7 @@ class AbstractModel(ABC):
 
 
 
-class StarBoxModel(AbstractModel):
+class StarBoxModel(AbstractFEMModel):
     def __init__(self, mesh:StarBoxMesh, **kwargs) -> None:
         self.mesh = mesh
         self.units = mesh.units
@@ -602,7 +602,7 @@ class StarBoxModel(AbstractModel):
         inf.write('*END')   
         inf.close()
 
-class ThreePointBendingModel(AbstractModel):
+class ThreePointBendingModel(AbstractFEMModel):
     def __init__(self, mesh:object) -> None:
 
         self.mesh = mesh
