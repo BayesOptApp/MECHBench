@@ -1,4 +1,4 @@
-from src.sob.problems import *
+from src.sob.models.problems import *
 from src.sob.utils.solver_setup import RunnerOptions
 from typing import Optional, Iterable, Union
 

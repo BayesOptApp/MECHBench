@@ -9,6 +9,19 @@ __pycache__/
 *.vtk
 *.k
 
+*.rst
+*.rad
+*.json
+*.geo_unrolled
+
+
+
+# More Radioss DATA files
+*ThreePointBendingA*
+*ThreePointBendingT*
+*combineT
+*combineA*
+
 # (Optional) keep specific text files:
 # !README.txt
 # !config.txt
