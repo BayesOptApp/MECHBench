@@ -145,5 +145,9 @@ class Observer:
     def csv_initialized(self) -> bool:
         return self._csv_initialized
     
+    @property
+    def main_folder_path(self) -> Path:
+        return self._main_folder_path
+    
 
 

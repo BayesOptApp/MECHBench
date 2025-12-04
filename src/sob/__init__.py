@@ -5,8 +5,9 @@ def get_problem(model_type:int,
                 dimension:int, 
                 runner_options:dict,
                 output_data:Optional[Union[Iterable,str]]=None,
-                sequential_id_numbering:bool=True,**kwargs)->AbstractPhysicalModel:
-    '''
+                sequential_id_numbering:bool=True,
+                **kwargs)->AbstractPhysicalModel:
+    r'''
     Generates a problem instance based on the specified model type and configuration.
 
     Parameters:
@@ -53,11 +54,10 @@ def get_problem(model_type:int,
         - 'usage_ratio' (Requires running FEM simulation)
         - 'load_uniformity' (Requires running FEM simulation)
         
-
     runner_options : dict
         A dictionary containing options for the simulation runner, such as paths and computational settings.
         At least the key "open_radioss_main_path" must be provided.
-        
+
     sequential_id_numbering : bool
         If True, assigns sequential IDs to each problem instance for unique identification.
     '''
@@ -83,6 +83,6 @@ def get_problem(model_type:int,
                                    **kwargs)
         return problem_instance
     else:
-        raise ValueError('Invalid model type')
+        raise ValueError('Invalid model type. Supported types are 1 (Star Box), 2 (Three Point Bending), and 3 (Crash Tube).')
 
 
