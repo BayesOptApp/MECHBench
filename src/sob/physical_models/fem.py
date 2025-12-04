@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from src.sob.models.mesh import StarBoxMesh,CrashTubeMesh
+from src.sob.physical_models.meshes import StarBoxMesh,CrashTubeMesh, ThreePointBendingMesh, AbstractMeshSettings
 from abc import ABC, abstractmethod
 
 
@@ -36,17 +36,19 @@ class AbstractFEMModel(ABC):
 
     
     @property
-    def mesh(self)->object:
+    def mesh(self)->AbstractMeshSettings:
         r"""
         Returns the mesh object linked to the model
         """
         return self._mesh
     
     @mesh.setter
-    def mesh(self, new_mesh:object)->None:
+    def mesh(self, new_mesh:AbstractMeshSettings)->None:
         r"""
         Sets a new mesh object by parameter
         """
+        if not isinstance(new_mesh,AbstractMeshSettings):
+            raise TypeError("The mesh must be an instance of AbstractMeshSettings or its subclasses.")
         self._mesh = new_mesh
     
     @property
@@ -603,7 +605,7 @@ class StarBoxModel(AbstractFEMModel):
         inf.close()
 
 class ThreePointBendingModel(AbstractFEMModel):
-    def __init__(self, mesh:object) -> None:
+    def __init__(self, mesh:ThreePointBendingMesh) -> None:
 
         self.mesh = mesh
         self.mesh.write_mesh_file()

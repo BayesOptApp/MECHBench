@@ -1,4 +1,4 @@
-from src.sob.models.lib.gmsh_base_meshes import Template_GMSH_Mesh_Constructor
+from src.sob.physical_models.meshes.routines.gmsh.gmsh_base_meshes  import Template_GMSH_Mesh_Constructor
 import gmsh
 import json
 from pathlib import Path

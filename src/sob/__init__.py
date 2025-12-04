@@ -1,12 +1,12 @@
-from src.sob.models.problems import *
-from src.sob.utils.solver_setup import RunnerOptions
+from src.sob.physical_models import AbstractPhysicalModel,StarBox, ThreePointBending, CrashTube
+from src.sob.physical_models.utils.solver_setup import RunnerOptions
 from typing import Optional, Iterable, Union
 
 def get_problem(model_type:int, 
                 dimension:int, 
                 runner_options:RunnerOptions,
                 output_data:Optional[Union[Iterable,str]]=None,
-                sequential_id_numbering:bool=True,**kwargs):
+                sequential_id_numbering:bool=True,**kwargs)->AbstractPhysicalModel:
     '''
     Generates a problem instance based on the specified model type and configuration.
 

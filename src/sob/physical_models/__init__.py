@@ -3,10 +3,12 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import List, Iterable, Union
 import shutil
-from src.sob.solver import run_radioss
-from src.sob.utils.solver_setup import RunnerOptions
-from src.sob.models.mesh import *
-from src.sob.models.fem import *
+import numpy as np
+from typing import Optional
+from src.sob.physical_models.solvers import run_radioss
+from src.sob.physical_models.utils.solver_setup import RunnerOptions
+from src.sob.physical_models.meshes import AbstractMeshSettings, StarBoxMesh, CrashTubeMesh, ThreePointBendingMesh
+from src.sob.physical_models.fem import *
 
 
 ### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
