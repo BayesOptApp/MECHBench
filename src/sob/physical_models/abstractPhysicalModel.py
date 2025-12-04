@@ -35,7 +35,7 @@ class AbstractPhysicalModel(ABC):
     '''
     def __init__(self, dimension:int, 
                  output_data:Union[Iterable,str], 
-                 runner_options:RunnerOptions,
+                 runner_options:dict,
                  sequential_id_numbering:bool=True) -> None:
         
         
@@ -44,10 +44,7 @@ class AbstractPhysicalModel(ABC):
         self.__sequential_id_numbering:bool = sequential_id_numbering
 
         # Assign the Properties to the case
-        self._runner_options = RunnerOptions(runner_options)
-
-        self._runner_options.complement()
-        self._runner_options.amend_integer_options(runner_options)
+        self._runner_options = RunnerOptions.from_dict(runner_options)
 
 
         # The attributes need to be overwritten in teh subclass
@@ -164,9 +161,9 @@ class AbstractPhysicalModel(ABC):
             run_OpenRadioss(input_file_path, 
                         self.batch_file_path, 
                         runStarter=runStarter,
-                        write_vtk=bool(self._runner_options('write_vtk')),
-                        np_int=self._runner_options('np'),
-                        nt_int=self._runner_options('nt'))
+                        write_vtk=bool(self._runner_options.write_vtk),
+                        np_int=self._runner_options.np,
+                        nt_int=self._runner_options.nt)
 
     def load_output_data_frame(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
@@ -362,7 +359,7 @@ class AbstractPhysicalModel(ABC):
     
     @property
     def batch_file_path(self)->str:
-        return self._runner_options('open_radioss_main_path')
+        return self._runner_options.open_radioss_main_path.as_posix()
     
     @property
     def output_data(self)->Union[List[str],str]:

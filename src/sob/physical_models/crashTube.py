@@ -1,7 +1,6 @@
 from typing import List, Optional, Union, Iterable
 from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
 from src.sob.physical_models.meshes import CrashTubeMesh
-from src.sob.physical_models.utils.solver_setup import RunnerOptions
 from src.sob.physical_models.fem_settings import CrashTubeModel
 
 class CrashTube(AbstractPhysicalModel):
@@ -11,10 +10,10 @@ class CrashTube(AbstractPhysicalModel):
     The design variables include the vertical positions, heights, and depths of the triggers,
     which can be adjusted within specified ranges
     """
-    
+
     instance_counter = 1
     def __init__(self, dimension, output_data, 
-                 runner_options:RunnerOptions,
+                 runner_options:dict,
                  sequential_id_numbering:bool) -> None:
         
         # Get the output data if it is not provided
@@ -80,8 +79,8 @@ class CrashTube(AbstractPhysicalModel):
 
     def _write_input_file(self, fem_space_variable_array):
         self.mesh = CrashTubeMesh(fem_space_variable_array,
-                                  h_level=self._runner_options('h_level'),
-                                  gmsh_verbosity=self._runner_options('gmsh_verbosity')
+                                  h_level=self._runner_options.h_level,
+                                  gmsh_verbosity=self._runner_options.gmsh_verbosity
                                   ) 
         self.fem_model = CrashTubeModel(self.mesh)
         self.fem_model.write_input_files()

@@ -1,7 +1,6 @@
 from typing import List, Optional, Union, Iterable
 from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
 from src.sob.physical_models.meshes import ThreePointBendingMesh
-from src.sob.physical_models.utils.solver_setup import RunnerOptions
 from src.sob.physical_models.fem_settings import ThreePointBendingModel
 import os, shutil
 
@@ -26,7 +25,7 @@ class ThreePointBending(AbstractPhysicalModel):
     def __init__(self, 
                  dimension, 
                  output_data, 
-                 runner_options:RunnerOptions,
+                 runner_options:dict,
                  sequential_id_numbering:bool) -> None:
         # Get the output data if it is not provided
         if output_data is None:
@@ -108,8 +107,8 @@ class ThreePointBending(AbstractPhysicalModel):
     def _write_input_file(self, thickness_array):
         self._copy_files_to_deck()
         self.mesh = ThreePointBendingMesh(thickness_array,
-                                          h_level=self._runner_options('h_level'),
-                                          gmsh_verbosity=self._runner_options('gmsh_verbosity')
+                                          h_level=self._runner_options.h_level,
+                                          gmsh_verbosity=self._runner_options.gmsh_verbosity
                                           )
         
         self.fem_model = ThreePointBendingModel(self.mesh)

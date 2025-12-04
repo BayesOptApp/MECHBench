@@ -1,7 +1,6 @@
 from typing import List, Optional, Union, Iterable
 from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
 from src.sob.physical_models.meshes import StarBoxMesh
-from src.sob.physical_models.utils.solver_setup import RunnerOptions
 from src.sob.physical_models.fem_settings import StarBoxModel
 
 
@@ -10,7 +9,7 @@ class StarBox(AbstractPhysicalModel):
 
     def __init__(self, 
                  dimension, 
-                 runner_options:RunnerOptions,
+                 runner_options:dict,
                  sequential_id_numbering:bool,
                  output_data:Optional[Union[Iterable,str]],
                  **kwargs) -> None:
@@ -102,8 +101,8 @@ class StarBox(AbstractPhysicalModel):
             None
         '''
         self.mesh = StarBoxMesh(fem_space_variable_array,
-                                h_level=self._runner_options('h_level'),
-                                gmsh_verbosity=self._runner_options('gmsh_verbosity')
+                                h_level=self._runner_options.h_level,
+                                gmsh_verbosity=self._runner_options.gmsh_verbosity
         )
         self.fem_model = StarBoxModel(self.mesh)
         self.fem_model.write_input_files()

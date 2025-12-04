@@ -1,10 +1,9 @@
 from src.sob.physical_models import AbstractPhysicalModel,StarBox, ThreePointBending, CrashTube
-from src.sob.physical_models.utils.solver_setup import RunnerOptions
 from typing import Optional, Iterable, Union
 
 def get_problem(model_type:int, 
                 dimension:int, 
-                runner_options:RunnerOptions,
+                runner_options:dict,
                 output_data:Optional[Union[Iterable,str]]=None,
                 sequential_id_numbering:bool=True,**kwargs)->AbstractPhysicalModel:
     '''
@@ -55,8 +54,12 @@ def get_problem(model_type:int,
         - 'load_uniformity' (Requires running FEM simulation)
         
 
-    runner_options : `RunnerOptions`
-        Path to the OpenRadioss batch file.
+    runner_options : dict
+        A dictionary containing options for the simulation runner, such as paths and computational settings.
+        At least the key "open_radioss_main_path" must be provided.
+        
+    sequential_id_numbering : bool
+        If True, assigns sequential IDs to each problem instance for unique identification.
     '''
     if model_type==1:
         problem_instance = StarBox(dimension=dimension, 
