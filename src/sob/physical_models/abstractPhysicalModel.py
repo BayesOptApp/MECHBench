@@ -28,16 +28,54 @@ _PROBLEM_SPECIFIC_OUTPUTS:tuple = ("penalized_sea","penalized_mass")
 
 class AbstractPhysicalModel(ABC):
     r'''
-    The abstract of the structural optimization models, with three subclass (three problem types)
-    The instance is initialized by problem dimension, output data type, and the batch file path of the solver OpenRadioss. 
-    The core idea is to generate a specific type of instance, input the variable array then output the evaluation of the desired data type like mass, intrusion, etc.
-    The input variables should be in an universal search space, default (-5,5). For the evaluation those variables will be mapped to the real FEM problem space.
+    Abstract base class for physical models used in structural optimization problems.
+    This class defines the interface and common functionality for all physical models,
+    including methods for generating input decks, running simulations, and extracting results.
+    Subclasses must implement specific methods for writing input files and defining forbidden output data.
+
     '''
     def __init__(self, dimension:int, 
                  output_data:Union[Iterable,str], 
                  runner_options:dict,
                  sequential_id_numbering:bool=True) -> None:
+        r"""
+        Initializes the AbstractPhysicalModel with the specified parameters.
+        Parameters:
+        ----------
+        dimension : int
+            The dimensionality of the optimization problem, which defines the number of design variables.
+        output_data : Union[Iterable,str]
+            The type of output data required from the simulation. It can be a single string or a list of strings.
+        runner_options : dict
+            A dictionary containing options for the simulation runner, such as paths and computational settings.
+            At least the key "open_radioss_main_path" must be provided.
+        sequential_id_numbering : bool
+            If True, assigns sequential IDs to each problem instance for unique identification.
         
+        Raises:
+        ------
+        ValueError
+            If the output_data contains any forbidden output data for the specific problem.
+        
+        Notes:
+        -----
+        Subclasses must define the following attributes:
+
+        - self.variable_ranges : List[tuple]
+            The ranges of the design variables for the optimization problem.
+        - self.input_file_name : str
+            The name of the input file for the simulation.
+        - self.output_file_name : str
+            The name of the output file for the simulation results.
+        - self.starter_out_file_name : str
+            The name of the starter output file for mass extraction.
+        - self.track_node_key : str
+            The key used to track specific nodes in the output data.
+        - self.impactor_force_key : str
+            The key used to track the impactor force in the output data.
+        
+
+        """
         
         self.dimension:int = dimension
         self.output_data:Union[Iterable,str] = output_data

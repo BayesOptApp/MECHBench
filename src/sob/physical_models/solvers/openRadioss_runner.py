@@ -125,8 +125,8 @@ def run_OpenRadioss(input_file_path:Union[str,Path],
                     envv["OMP_NUM_THREADS"] = str(nt_int)
 
                     ##
-                    print("Running OpenRadioss with the following command:")
-                    print(" ".join(iCommand))
+                    ##print("Running OpenRadioss with the following command:")
+                    ##print(" ".join(iCommand))
                     print("Running in directory: ", run_env.running_directory)
                     ##
                     if "SLURM_JOB_ID" in os.environ:
