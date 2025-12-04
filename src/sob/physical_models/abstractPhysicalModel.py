@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import os
-from typing import Iterable, List, Union
+from pathlib import Path
+from typing import Iterable, List, Union, Optional
 import numpy as np
 
 from src.sob.physical_models.fem_settings.abstractFEMSettings import AbstractFEMSettings
@@ -34,10 +35,12 @@ class AbstractPhysicalModel(ABC):
     Subclasses must implement specific methods for writing input files and defining forbidden output data.
 
     '''
-    def __init__(self, dimension:int, 
+    def __init__(self, 
+                 dimension:int, 
                  output_data:Union[Iterable,str], 
                  runner_options:dict,
-                 sequential_id_numbering:bool=True) -> None:
+                 sequential_id_numbering:bool=True,
+                 root_folder:Optional[Union[str,Path]]=None) -> None:
         r"""
         Initializes the AbstractPhysicalModel with the specified parameters.
         Parameters:
@@ -51,6 +54,9 @@ class AbstractPhysicalModel(ABC):
             At least the key "open_radioss_main_path" must be provided.
         sequential_id_numbering : bool
             If True, assigns sequential IDs to each problem instance for unique identification.
+        root_folder : Optional[Union[str,Path]]
+            The root folder where simulation files will be stored. If None, the current working directory is
+            used.
         
         Raises:
         ------
@@ -85,7 +91,7 @@ class AbstractPhysicalModel(ABC):
         self._runner_options = RunnerOptions.from_dict(runner_options)
 
 
-        # The attributes need to be overwritten in teh subclass
+        # The attributes need to be overwritten in the subclass
         self._deck_id:int = -1 
         self.variable_ranges = None # constraints of the problem
         self.input_file_name = None # input deck name
@@ -99,9 +105,10 @@ class AbstractPhysicalModel(ABC):
 
         # The attributes will be loaded if the function run_simulation has been called.
         self.output_data_frame = None
+
+        # Assign the root folder
+        self.root_folder = root_folder
         
-        # Universal design variable search space
-        self.search_space = (-5.0, 5.0)
 
         # TODO: This is a dummy variable for defining the simulation status:
         #   0 -> Simulation not started
@@ -157,16 +164,18 @@ class AbstractPhysicalModel(ABC):
             mapped_var = self.linear_mapping_variable(var, self.variable_ranges[i])
             fem_space_variable_array.append(mapped_var)
 
-        original_dir = os.getcwd()
+        original_dir:Path = self.root_folder
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
         print('######################################################\n')
         print(dir_name)
-        working_dir = os.path.join(os.getcwd(), dir_name)
-        if not os.path.exists(working_dir):
-            os.makedirs(working_dir)
-        os.chdir(working_dir)
+        working_dir = original_dir.joinpath(dir_name)
+        
+        if not working_dir.exists():
+            working_dir.mkdir(parents=True, exist_ok=True)
+        
+        os.chdir(working_dir.as_posix())
         self._write_input_file(fem_space_variable_array)
-        os.chdir(original_dir)
+        os.chdir(original_dir.as_posix())
 
         if self.__sequential_id_numbering:
             self.deck_id += 1 # update the problem id for the input deck generation
@@ -182,21 +191,22 @@ class AbstractPhysicalModel(ABC):
         if self.__sequential_id_numbering:
             self.deck_id -= 1
 
+        original_dir:Path = self.root_folder
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
-        working_dir = os.path.join(os.getcwd(), dir_name)
-        input_file_path = os.path.join(working_dir, self.input_file_name)
+        working_dir = original_dir.joinpath(dir_name)
+        input_file_path = working_dir.joinpath(self.input_file_name)
 
         if runStarter:
             # This is just one bypass in order to avoid setting MP settings
             # for just the mass computation
-            run_OpenRadioss(input_file_path, 
+            run_OpenRadioss(input_file_path.as_posix(), 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=False,
                         np_int=1,
                         nt_int=1)
         else:
-            run_OpenRadioss(input_file_path, 
+            run_OpenRadioss(input_file_path.as_posix(), 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=bool(self._runner_options.write_vtk),
@@ -205,10 +215,10 @@ class AbstractPhysicalModel(ABC):
 
     def load_output_data_frame(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
-        working_dir = os.path.join(os.getcwd(), dir_name)
+        working_dir = self.root_folder.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
-        output_file_path = os.path.join(working_dir, self.output_file_name)
-        self.output_data_frame = pd.read_csv(output_file_path)
+        output_file_path = working_dir.joinpath(self.output_file_name)
+        self.output_data_frame = pd.read_csv(output_file_path.as_posix())
         self.output_data_frame.columns = self.output_data_frame.columns.str.replace(' ', '')
         
         # update problem id again
@@ -217,11 +227,11 @@ class AbstractPhysicalModel(ABC):
 
     def extract_mass_from_file(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
-        working_dir = os.path.join(os.getcwd(), dir_name)
+        working_dir = self.root_folder.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
-        starter_out_file_path = os.path.join(working_dir, self.starter_out_file_name)
+        starter_out_file_path = working_dir.joinpath(self.starter_out_file_name)
         # Open the file and read its contents
-        with open(starter_out_file_path, 'r') as file:
+        with open(starter_out_file_path.as_posix(), 'r') as file:
             lines = file.readlines()
         # Define the marker for where the mass value starts
         mass_marker = "TOTAL MASS AND MASS CENTER"
@@ -461,7 +471,12 @@ class AbstractPhysicalModel(ABC):
             
             # Now try to set the output data
             self._output_data = new_output_data
-                    
+            
+    @output_data.deleter
+    def output_data(self)->None:
+        del self._output_data                    
+
+
     @property
     def fem_model(self)->AbstractFEMSettings:
         return self._fem_model
@@ -472,11 +487,16 @@ class AbstractPhysicalModel(ABC):
             raise TypeError("The type of the object is not correct")
         else:
             self._fem_model = new_model
-
     
-    @output_data.deleter
-    def output_data(self)->None:
-        del self._output_data
+    @property
+    def search_space(self)->tuple:
+        r"""
+        Returns the universal search space for the optimization problem.
+        This search space is defined as (-5.0, 5.0) for all
+        design variables, regardless of the specific problem.
+        """
+        return (-5.0,
+                5.0)
     
     @property
     @abstractmethod
@@ -485,3 +505,23 @@ class AbstractPhysicalModel(ABC):
         Returns a list of forbidden output data for the problem.
         """
         pass
+
+    @property
+    def root_folder(self)->Path:
+        return self._root_folder
+    
+    @root_folder.setter
+    def root_folder(self, new_root_folder:Optional[Union[str,Path]])->None:
+        if new_root_folder is not None:
+            if not isinstance(new_root_folder,(str,Path)):
+                raise TypeError("The type of the object is not correct")
+            else:
+                if isinstance(new_root_folder,str):
+                    new_root_folder = Path(new_root_folder)
+                
+                self._root_folder = new_root_folder
+                # Create the folder if it does not exist and ensure it's a folder
+                self._root_folder.mkdir(parents=True, exist_ok=True)
+
+        else:
+            self._root_folder = Path.cwd()

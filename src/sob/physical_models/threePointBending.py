@@ -1,5 +1,5 @@
 from typing import List, Optional, Union, Iterable
-from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
+from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel, Optional, Path, Union
 from src.sob.physical_models.meshes import ThreePointBendingMesh
 from src.sob.physical_models.fem_settings import ThreePointBendingModel
 import os, shutil
@@ -26,20 +26,21 @@ class ThreePointBending(AbstractPhysicalModel):
                  dimension, 
                  output_data, 
                  runner_options:dict,
-                 sequential_id_numbering:bool) -> None:
+                 sequential_id_numbering:bool,
+                 root_folder:Optional[Union[str,Path]]=None) -> None:
         # Get the output data if it is not provided
         if output_data is None:
             output_data = "penalized_mass"
         elif isinstance(output_data, str):
             if output_data in self.forbidden_output_data:
-                raise ValueError(f"The output data {output_data} is not allowed for the StarBox problem.")
+                raise ValueError(f"The output data {output_data} is not allowed for the Three Point Bending problem.")
         elif isinstance(output_data, tuple) or isinstance(output_data, list):
             for elem in output_data:
                 if elem in self.forbidden_output_data:
-                    raise ValueError(f"The output data {elem} is not allowed for the StarBox problem.")
+                    raise ValueError(f"The output data {elem} is not allowed for the Three Point Bending problem.")
 
         
-        super().__init__(dimension, output_data, runner_options,sequential_id_numbering)
+        super().__init__(dimension, output_data, runner_options,sequential_id_numbering, root_folder)
         # 1 -> all 5 shell thickness vary with same value. 
         # 2 -> only first and the last shell thickness vary, other fixed with middle value. 
         # 3 -> the first, middle, and last shell thickness vary. 
@@ -127,7 +128,7 @@ class ThreePointBending(AbstractPhysicalModel):
     
     def peak_force_calculation(self) -> float:
         r"""
-        This is a refactoring of the peak force calculation function, which is
+        This is a refactoring of the peak force calculation function, which isroot_folder:Optional[Union[str,Path]]
         used to calculate the peak force of the model. The function is called
         when the simulation is run, and it returns the peak force of the model.
 

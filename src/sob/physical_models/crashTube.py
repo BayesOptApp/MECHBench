@@ -1,5 +1,5 @@
 from typing import List, Optional, Union, Iterable
-from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
+from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel, Optional, Path, Union
 from src.sob.physical_models.meshes import CrashTubeMesh
 from src.sob.physical_models.fem_settings import CrashTubeModel
 
@@ -14,24 +14,26 @@ class CrashTube(AbstractPhysicalModel):
     instance_counter = 1
     def __init__(self, dimension, output_data, 
                  runner_options:dict,
-                 sequential_id_numbering:bool) -> None:
+                 sequential_id_numbering:bool,
+                 root_folder:Optional[Union[str,Path]]=None) -> None:
         
         # Get the output data if it is not provided
         if output_data is None:
             output_data = "load_uniformity"
         elif isinstance(output_data, str):
             if output_data in self.forbidden_output_data:
-                raise ValueError(f"The output data {output_data} is not allowed for the StarBox problem.")
+                raise ValueError(f"The output data {output_data} is not allowed for the Crash Tube problem.")
         elif isinstance(output_data, tuple) or isinstance(output_data, list):
             for elem in output_data:
                 if elem in self.forbidden_output_data:
-                    raise ValueError(f"The output data {elem} is not allowed for the StarBox problem.")
+                    raise ValueError(f"The output data {elem} is not allowed for the Crash Tube problem.")
  
         
         super().__init__(dimension=dimension, 
                          output_data=output_data, 
                          runner_options=runner_options ,
-                         sequential_id_numbering=sequential_id_numbering)
+                         sequential_id_numbering=sequential_id_numbering,
+                         root_folder=root_folder)
 
         ### NOTE: THIS IS THE PREVIOUS DEFINITION
         ### NOTE: JUST WRITTEN FOR COMPARISON 

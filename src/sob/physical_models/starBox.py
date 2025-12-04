@@ -1,5 +1,5 @@
 from typing import List, Optional, Union, Iterable
-from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
+from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel, Optional, Path, Union
 from src.sob.physical_models.meshes import StarBoxMesh
 from src.sob.physical_models.fem_settings import StarBoxModel
 
@@ -12,6 +12,7 @@ class StarBox(AbstractPhysicalModel):
                  runner_options:dict,
                  sequential_id_numbering:bool,
                  output_data:Optional[Union[Iterable,str]],
+                 root_folder:Optional[Union[str,Path]]=None,
                  **kwargs) -> None:
         r"""
         The StarBox optimization problem is a structural optimization problem
@@ -34,7 +35,8 @@ class StarBox(AbstractPhysicalModel):
         super().__init__(dimension, 
                          output_data, 
                          runner_options,
-                         sequential_id_numbering)
+                         sequential_id_numbering,
+                         root_folder)
         # 1 -> square
         # 2 -> rectangular
         # 3 -> rectangular with varying thickness

@@ -32,7 +32,7 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 }
 
 def main():
-    sim_id = 273 # Attribute to define the simulation id and connected results folder name
+    sim_id = 274 # Attribute to define the simulation id and connected results folder name
     vector = np.random.uniform(-5,5,(5,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
     # vector = np.zeros((30,)).tolist()] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
     print(f"Evaluating vector: {vector}")
