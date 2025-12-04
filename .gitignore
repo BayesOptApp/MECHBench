@@ -11,7 +11,12 @@ __pycache__/
 
 *.rst
 *.rad
-*.json
+*py_mesh_input.json
+*property.txt
+*mesh.txt
+*material.txt
+*dcc.txt
+*bc_wall.txt
 *.geo_unrolled
 
 
