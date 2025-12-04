@@ -1,0 +1,4 @@
+from src.sob.physical_models.fem_settings.abstractFEMSettings import AbstractFEMSettings
+from src.sob.physical_models.fem_settings.starBoxModel import StarBoxModel
+from src.sob.physical_models.fem_settings.crashTubeModel import CrashTubeModel
+from src.sob.physical_models.fem_settings.threePointBendingModel import ThreePointBendingModel

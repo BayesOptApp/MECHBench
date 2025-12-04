@@ -8,7 +8,7 @@ from typing import Optional
 from src.sob.physical_models.solvers.openRadioss_runner import run_OpenRadioss
 from src.sob.physical_models.utils.solver_setup import RunnerOptions
 from src.sob.physical_models.meshes import AbstractMeshSettings, StarBoxMesh, CrashTubeMesh, ThreePointBendingMesh
-from src.sob.physical_models.fem import *
+from src.sob.physical_models.fem_settings import AbstractFEMSettings, StarBoxModel, CrashTubeModel, ThreePointBendingModel
 
 
 ### ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -421,12 +421,12 @@ class AbstractPhysicalModel(ABC):
             self._output_data = new_output_data
                     
     @property
-    def fem_model(self)->AbstractFEMModel:
+    def fem_model(self)->AbstractFEMSettings:
         return self._fem_model
     
     @fem_model.setter
-    def fem_model(self, new_model:AbstractFEMModel)->None:
-        if not issubclass(type(new_model),AbstractFEMModel) and (new_model is not None):
+    def fem_model(self, new_model:AbstractFEMSettings)->None:
+        if not issubclass(type(new_model),AbstractFEMSettings) and (new_model is not None):
             raise TypeError("The type of the object is not correct")
         else:
             self._fem_model = new_model
