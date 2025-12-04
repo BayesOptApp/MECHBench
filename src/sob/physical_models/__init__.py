@@ -5,7 +5,7 @@ from typing import List, Iterable, Union
 import shutil
 import numpy as np
 from typing import Optional
-from src.sob.physical_models.solvers import run_radioss
+from src.sob.physical_models.solvers.openRadioss_runner import run_OpenRadioss
 from src.sob.physical_models.utils.solver_setup import RunnerOptions
 from src.sob.physical_models.meshes import AbstractMeshSettings, StarBoxMesh, CrashTubeMesh, ThreePointBendingMesh
 from src.sob.physical_models.fem import *
@@ -147,14 +147,14 @@ class AbstractPhysicalModel(ABC):
         if runStarter:
             # This is just one bypass in order to avoid setting MP settings
             # for just the mass computation
-            run_radioss(input_file_path, 
+            run_OpenRadioss(input_file_path, 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=False,
                         np_int=1,
                         nt_int=1)
         else:
-            run_radioss(input_file_path, 
+            run_OpenRadioss(input_file_path, 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=bool(self._runner_options('write_vtk')),

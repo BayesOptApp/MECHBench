@@ -6,7 +6,7 @@ from typing import Union
 from src.sob.physical_models.utils.run_openradioss import RunOpenRadioss
 
 
-def run_radioss(input_file_path:Union[str,Path], 
+def run_OpenRadioss(input_file_path:Union[str,Path], 
                 batch_file_path:Union[str,Path], 
                 write_vtk:bool= True, 
                 write_csv:bool = True, 
