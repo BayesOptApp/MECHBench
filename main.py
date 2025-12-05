@@ -25,17 +25,18 @@ else:
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
-                 "np":1,
-                 "nt":4,
+                 "np":8,
+                 "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
 }
 
 def main():
-    sim_id = 255 # Attribute to define the simulation id and connected results folder name
-    vector = [3.42834656, 2.15259375, -1.49093763, 1.69472419, -0.29146718, 1.32146257, 4.98257611, -2.80885004, -3.23567450, -4.48471372]
+    sim_id = 275 # Attribute to define the simulation id and connected results folder name
+    vector = np.random.uniform(-5,5,(5,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
     # vector = np.zeros((30,)).tolist()] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-    f = sob.get_problem(3,10,runnerOptions,"load_uniformity",sequential_id_numbering=False)
+    print(f"Evaluating vector: {vector}")
+    f = sob.get_problem(2,5,runnerOptions,["intrusion","mass","mean_impact_force","max_impact_force","load_uniformity"],sequential_id_numbering=False)
     obj_value = f(vector,sim_id)
     print(obj_value)
     

@@ -1,0 +1,55 @@
+# ---- Python ignores ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.punch
+
+# ---- VTK / Radioss / Simulation files ----
+*.vtk
+*.k
+
+*.rst
+*.rad
+*py_mesh_input.json
+*property.txt
+*mesh.txt
+*material.txt
+*dcc.txt
+*bc_wall.txt
+*.geo_unrolled
+
+
+
+# More Radioss DATA files
+*ThreePointBendingA*
+*ThreePointBendingT*
+*combineT
+*combineA*
+
+# (Optional) keep specific text files:
+# !README.txt
+# !config.txt
+
+# ---- OS / Editor ----
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# ---- Virtual environments ----
+venv/
+.env/
+.venv/
+
+# ---- Build / cache ----
+build/
+dist/
+*.egg-info/
