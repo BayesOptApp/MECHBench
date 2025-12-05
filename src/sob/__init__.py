@@ -1,4 +1,7 @@
-from src.sob.physical_models import AbstractPhysicalModel,StarBox, ThreePointBending, CrashTube
+from src.sob.physical_models import AbstractPhysicalModel
+from src.sob.physical_models.starBox import StarBox
+from src.sob.physical_models.threePointBending import ThreePointBending
+from src.sob.physical_models.crashTube import CrashTube
 from typing import Optional, Iterable, Union
 
 def get_problem(model_type:int, 

@@ -1,4 +1,5 @@
-from src.sob.physical_models import AbstractPhysicalModel, get_model
+from src.sob.physical_models import get_model
+from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
 import numpy as np
 from src.sob.observer import Observer
 from typing import Optional, Union, Dict, Iterable, List
@@ -24,6 +25,7 @@ class Sampler:
             model_number: The model type number to instantiate the physical model.
             observer: The observer/logger instance (optional)
         """
+        # Get the physical model
         self.model = get_model(model_type=model_number,
                                     dimension=dimension,
                                     runner_options=runner_options,
@@ -31,6 +33,9 @@ class Sampler:
                                     sequential_id_numbering=True, # Set to False for Sampler usage
                                     root_folder=root_folder,
                                     )
+        
+        # Initialize observer to None
+        self._observer:Optional[Observer] = None
     
     def __call__(self, 
                  vector:Union[List[float],np.ndarray], 
@@ -53,7 +58,7 @@ class Sampler:
             vector = vector.tolist()
         
         # Evaluate the model with the provided vector
-        result = self.model(vector, *args, **kwargs)
+        result = self.model(vector, )
 
 
         # If observer is set, log the result
@@ -62,13 +67,13 @@ class Sampler:
             input_fields = {f"x{i}": val for i, val in enumerate(vector)}
             # Make a list with the output variables (marked from y0, y1, ...)
             if isinstance(result, (list,tuple)):
-                output_fields = {f"{self.model.output_data}": val for _, val in enumerate(result)}
+                output_fields = {f"{self.model.output_data[i]}": val for i, val in enumerate(result)}
             else:
                 output_fields = {f"{self.model.output_data}": result}
 
             # Combine input and output fields
             log_fields = {**input_fields, **output_fields}
-            self.observer.log(log_fields)
+            self.observer.log(**log_fields)
         
         return result
     

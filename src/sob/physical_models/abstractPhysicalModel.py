@@ -164,7 +164,7 @@ class AbstractPhysicalModel(ABC):
             mapped_var = self.linear_mapping_variable(var, self.variable_ranges[i])
             fem_space_variable_array.append(mapped_var)
 
-        original_dir:Path = self.root_folder
+        original_dir:Path = self.root_folder.absolute()
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
         print('######################################################\n')
         print(dir_name)
@@ -191,7 +191,7 @@ class AbstractPhysicalModel(ABC):
         if self.__sequential_id_numbering:
             self.deck_id -= 1
 
-        original_dir:Path = self.root_folder
+        original_dir:Path = self.root_folder.absolute()
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
         working_dir = original_dir.joinpath(dir_name)
         input_file_path = working_dir.joinpath(self.input_file_name)
@@ -199,14 +199,14 @@ class AbstractPhysicalModel(ABC):
         if runStarter:
             # This is just one bypass in order to avoid setting MP settings
             # for just the mass computation
-            run_OpenRadioss(input_file_path.as_posix(), 
+            run_OpenRadioss(input_file_path.absolute().as_posix(), 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=False,
                         np_int=1,
                         nt_int=1)
         else:
-            run_OpenRadioss(input_file_path.as_posix(), 
+            run_OpenRadioss(input_file_path.absolute().as_posix(), 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=bool(self._runner_options.write_vtk),
@@ -215,7 +215,8 @@ class AbstractPhysicalModel(ABC):
 
     def load_output_data_frame(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
-        working_dir = self.root_folder.joinpath(dir_name)
+        original_dir:Path = self.root_folder.absolute()    
+        working_dir = original_dir.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
         output_file_path = working_dir.joinpath(self.output_file_name)
         self.output_data_frame = pd.read_csv(output_file_path.as_posix())
@@ -227,7 +228,8 @@ class AbstractPhysicalModel(ABC):
 
     def extract_mass_from_file(self):
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
-        working_dir = self.root_folder.joinpath(dir_name)
+        original_dir:Path = self.root_folder.absolute()
+        working_dir = original_dir.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
         starter_out_file_path = working_dir.joinpath(self.starter_out_file_name)
         # Open the file and read its contents
@@ -303,7 +305,7 @@ class AbstractPhysicalModel(ABC):
             self.load_output_data_frame()
         force_data = self._get_force_data()
         
-        return np.abs(np.max(force_data)).astype(float).ravel()
+        return np.abs(np.max(force_data)).astype(float).ravel()[0]
 
     def mean_force_calculation(self) -> float:
         if self.sim_status < 2 or self.output_data_frame is None: 
@@ -314,7 +316,7 @@ class AbstractPhysicalModel(ABC):
 
         force_data = self._get_force_data()
         
-        return np.abs(np.mean(force_data)).astype(float).ravel()
+        return np.abs(np.mean(force_data)).astype(float).ravel()[0]
     
 
 
@@ -517,11 +519,13 @@ class AbstractPhysicalModel(ABC):
                 raise TypeError("The type of the object is not correct")
             else:
                 if isinstance(new_root_folder,str):
-                    new_root_folder = Path(new_root_folder)
+                    new_root_folder = Path(new_root_folder).absolute()
+                else:
+                    new_root_folder = new_root_folder.absolute()
                 
                 self._root_folder = new_root_folder
                 # Create the folder if it does not exist and ensure it's a folder
                 self._root_folder.mkdir(parents=True, exist_ok=True)
 
         else:
-            self._root_folder = Path.cwd()
+            self._root_folder = Path.cwd().absolute()

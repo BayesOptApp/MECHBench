@@ -72,14 +72,15 @@ class ThreePointBending(AbstractPhysicalModel):
             mapped_var = self.linear_mapping_variable(var, self.variable_range)
             thickness_array.append(mapped_var)
 
-        original_dir = os.getcwd()
+        original_dir = self.root_folder.absolute()
         dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
-        working_dir = os.path.join(os.getcwd(), dir_name)
-        if not os.path.exists(working_dir):
-            os.makedirs(working_dir)
-        os.chdir(working_dir)
+        working_dir = original_dir.joinpath( dir_name)
+        if not working_dir.exists():
+            working_dir.mkdir(parents=True, exist_ok=True)
+
+        os.chdir(working_dir.absolute().as_posix())
         self._write_input_file(thickness_array)
-        os.chdir(original_dir)
+        os.chdir(original_dir.absolute().as_posix())
 
         if self.sequential_id_numbering:
             self.deck_id = ThreePointBending.instance_counter
@@ -89,21 +90,22 @@ class ThreePointBending(AbstractPhysicalModel):
         # Get the path to the lib directory relative to the current file
         deck_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
 
-        lib_dir = os.path.join(os.path.dirname(__file__), 'lib')
+        lib_dir = Path(os.path.join(os.path.dirname(__file__), 'lib'))
         
         # Source file paths
         source_files = ['ThreePointBending_0001.rad']  # Copy base starter file and engine files
         # Destination folder path
-        dest_folder = os.getcwd()
+        dest_folder = Path(os.getcwd())
         
         # Create the destination folder if it doesn't exist
-        os.makedirs(dest_folder, exist_ok=True)
+        if not dest_folder.exists():
+            dest_folder.mkdir(parents=True, exist_ok=True)
         
         # Copy each source file to the destination folder
         for file_name in source_files:
-            source_path = os.path.join(lib_dir, file_name)
-            dest_path = os.path.join(dest_folder, file_name)
-            shutil.copyfile(source_path, dest_path)
+            source_path = lib_dir.joinpath(file_name)
+            dest_path = dest_folder.joinpath(file_name)
+            shutil.copyfile(source_path.as_posix(), dest_path.as_posix())
 
     def _write_input_file(self, thickness_array):
         self._copy_files_to_deck()

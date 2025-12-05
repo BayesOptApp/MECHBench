@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Union
 from pathlib import Path
 import csv
 import json
@@ -7,45 +7,45 @@ import os
 
 
 class Observer:
+    """
+    Observer that creates a unique output folder, logs CSV rows, 
+    and writes a JSON config at the end.
+    """
     def __init__(self,
-                 folder_name:str, 
-                 root:Optional[Union[str,Path]]=None,
+                 folder_name: str,
+                 root: Optional[Union[str, Path]] = None):
+        
+        self._root = Path(root) if root is not None else Path.cwd().absolute()
+        if not self._root.exists():
+            self._root.mkdir(parents=True, exist_ok=True)
 
-    ):
-        """
-        Parameters
-        ----------
-        csv_path : str
-            Path to CSV file to write data rows.
-        config_path : str
-            Path to JSON file to write config metadata at the end.
-        config : dict or None
-            Metadata/configuration to store in final JSON.
-        """
-        self._root = Path(root) if root is not None else Path.cwd()
-        self._folder_name = folder_name
+        self._folder_name = None
+        self._main_folder_path = None
 
+        # This will create the directory and ensure uniqueness
+        self.folder_name = folder_name
 
         self.start_time = time.perf_counter()
-
         self._csv_initialized = False
         self._fieldnames = None
         self._rows_written = 0
 
-    def log(self, **fields):
-        """
-        Log a set of named values to the CSV file.
+        self.csv_path = None
+        self.config_path = None
 
-        Example:
-            logger.log(step=1, x=0.2, y1=0.04, y2=0.008)
-        """
-        # Add a timestamp if desired
-        fields = {"time": time.time() - self.start_time, **fields}
+    # ============================================================
+    # Logging
+    # ============================================================
+
+    def log(self, **fields):
+        r"""Log a row of key/value data to CSV."""
+
+
+        fields = {"time": time.perf_counter() - self.start_time, **fields}
 
         if not self._csv_initialized:
             self._initialize_csv(fields.keys())
 
-        # Write row
         with open(self.csv_path, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=self._fieldnames)
             writer.writerow(fields)
@@ -55,9 +55,11 @@ class Observer:
     def _initialize_csv(self, keys):
         """Create CSV with header row."""
         self._fieldnames = list(keys)
+        data_folder = self._main_folder_path.joinpath("data").absolute()
+        if not data_folder.exists():
+            data_folder.mkdir(exist_ok=True, parents=True)
 
-        # Initialize CSV file
-        self.csv_path = self._main_folder_path.joinpath("data/log.csv")
+        self.csv_path = data_folder.joinpath("log.csv").absolute()
 
         with open(self.csv_path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=self._fieldnames)
@@ -65,89 +67,79 @@ class Observer:
 
         self._csv_initialized = True
 
-    # -----------------------------
-    # Finalize and write JSON config
-    # -----------------------------
+    # ============================================================
+    # Finalization
+    # ============================================================
 
     def finalize(self, **kwargs):
-        """
-        Write configuration metadata to the JSON config file.
-        """
-
+        """Write JSON summary with model description."""
         model = kwargs.get("model", None)
         if model is None:
             raise NotImplementedError("Model serialization not implemented yet.")
-        
-        self.config_path = self._main_folder_path.joinpath("config.json")
+
+        self.config_path = self._main_folder_path.joinpath("config.json").absolute()
 
         full_config = {
             "model": model,
             "rows_written": self._rows_written,
-            "duration_seconds": time.time() - self.start_time,
-            "csv_path": os.path.abspath(self.csv_path)
+            "duration_seconds": time.perf_counter() - self.start_time,
+            "csv_path": str(self.csv_path.resolve()) if self.csv_path else None
         }
 
         with open(self.config_path, "w") as f:
             json.dump(full_config, f, indent=2)
 
-    # Optional convenience
     def summary(self):
         print(f"CSV rows written: {self._rows_written}")
-        print(f"Config JSON path: {self.config_path}")
+        print(f"Folder: {self._main_folder_path}")
+        if self.config_path:
+            print(f"Config JSON path: {self.config_path}")
+
+    # ============================================================
+    # Properties
+    # ============================================================
 
     @property
     def root(self) -> Path:
         return self._root
-    
-    @root.setter
-    def root(self, value:Union[str,Path]):
-        self._root = Path(value)
-        self._root.mkdir(parents=True, exist_ok=True)
 
-        self._main_folder_path = self._root.joinpath(self.folder_name)
-        
-        # If folder exists, find next available number
-        counter = 1
-        while self._main_folder_path.exists():
-            self.folder_name = f"{self.folder_name}_{counter}"
-            self._main_folder_path = self._root.joinpath(f"{self.folder_name}_{counter}")
-            counter += 1
-        
-        # Create the folder
-        self.folder_name = self._main_folder_path.name
-    
     @property
     def folder_name(self) -> str:
         return self._folder_name
-    
+
     @folder_name.setter
-    def folder_name(self, value:str):
-        self._folder_name = value
-
-        self._main_folder_path = self._root.joinpath(self._folder_name)
-
-        # If folder exists, find next available number
+    def folder_name(self, value: str):
+        """
+        Sets folder name and ensures uniqueness inside `root`.
+        Example:
+            output → output_1 → output_2 → ...
+        """
+        base = value
+        candidate = self._root / base
         counter = 1
-        while self._main_folder_path.exists():
-            self._folder_name = f"{value}_{counter}"
-            self._main_folder_path = self._root.joinpath(f"{self._folder_name}_{counter}")
+
+        while candidate.exists():
+            candidate = self._root / f"{base}_{counter}"
             counter += 1
-        
-        # Create the folder
-        self._main_folder_path.mkdir(parents=True, exist_ok=True)
-        self._folder_name = self._main_folder_path.name
-    
+
+        candidate.mkdir(parents=True, exist_ok=True)
+
+        self._main_folder_path = candidate.absolute()
+        self._folder_name = candidate.name
+
+    # Read-only helper properties
     @property
     def rows_written(self) -> int:
         return self._rows_written
-    
+
     @property
     def csv_initialized(self) -> bool:
         return self._csv_initialized
-    
+
     @property
     def main_folder_path(self) -> Path:
         return self._main_folder_path
+
     
 
 
