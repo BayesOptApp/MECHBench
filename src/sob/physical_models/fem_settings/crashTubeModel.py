@@ -1,6 +1,7 @@
 from src.sob.physical_models.fem_settings.abstractFEMSettings import AbstractFEMSettings
 from src.sob.physical_models.meshes import CrashTubeMesh
 from src.sob.physical_models.fem_settings.starBoxModel import StarBoxModel
+import numpy as np
 
 class CrashTubeModel(StarBoxModel):
     def __init__(self, mesh: CrashTubeMesh, **kwargs) -> None:
