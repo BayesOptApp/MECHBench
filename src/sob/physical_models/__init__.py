@@ -6,7 +6,6 @@ def get_model(model_type:int,
                 dimension:int, 
                 runner_options:dict,
                 output_data:Optional[Union[Iterable,str]]=None,
-                sequential_id_numbering:bool=True,
                 root_folder:Optional[Union[str,Path]]=None,
                 **kwargs)->AbstractPhysicalModel:
     r'''
@@ -68,7 +67,6 @@ def get_model(model_type:int,
         problem_instance = StarBox(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    root_folder=root_folder,
                                    **kwargs)
         return problem_instance
@@ -77,7 +75,6 @@ def get_model(model_type:int,
         problem_instance = ThreePointBending(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    root_folder=root_folder,
                                    **kwargs)
         return problem_instance
@@ -86,7 +83,6 @@ def get_model(model_type:int,
         problem_instance = CrashTube(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    root_folder=root_folder,
                                    **kwargs)
         return problem_instance

@@ -27,7 +27,7 @@ else:
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
-                 "np":8,
+                 "np":4,
                  "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,

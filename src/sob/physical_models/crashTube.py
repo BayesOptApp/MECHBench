@@ -14,7 +14,7 @@ class CrashTube(AbstractPhysicalModel):
     instance_counter = 1
     def __init__(self, dimension, output_data, 
                  runner_options:dict,
-                 sequential_id_numbering:bool,
+
                  root_folder:Optional[Union[str,Path]]=None) -> None:
         
         # Get the output data if it is not provided
@@ -32,7 +32,6 @@ class CrashTube(AbstractPhysicalModel):
         super().__init__(dimension=dimension, 
                          output_data=output_data, 
                          runner_options=runner_options ,
-                         sequential_id_numbering=sequential_id_numbering,
                          root_folder=root_folder)
 
         ### NOTE: THIS IS THE PREVIOUS DEFINITION
@@ -75,9 +74,6 @@ class CrashTube(AbstractPhysicalModel):
         self.track_node_key = 'DATABASE_HISTORY_NODE99999'
         self.impactor_force_key = "TH-RWALL1IMPACTOR"
 
-        if self.sequential_id_numbering:
-            self.deck_id = CrashTube.instance_counter
-            CrashTube.instance_counter+=1
 
     def _write_input_file(self, fem_space_variable_array):
         self.mesh = CrashTubeMesh(fem_space_variable_array,

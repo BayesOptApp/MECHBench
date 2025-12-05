@@ -4,11 +4,11 @@ from src.sob.physical_models.threePointBending import ThreePointBending
 from src.sob.physical_models.crashTube import CrashTube
 from typing import Optional, Iterable, Union
 
+
 def get_problem(model_type:int, 
                 dimension:int, 
                 runner_options:dict,
                 output_data:Optional[Union[Iterable,str]]=None,
-                sequential_id_numbering:bool=True,
                 **kwargs)->AbstractPhysicalModel:
     r'''
     Generates a problem instance based on the specified model type and configuration.
@@ -68,21 +68,18 @@ def get_problem(model_type:int,
         problem_instance = StarBox(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    **kwargs)
         return problem_instance
     elif model_type==2:
         problem_instance = ThreePointBending(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    **kwargs)
         return problem_instance
     elif model_type==3:
         problem_instance = CrashTube(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    **kwargs)
         return problem_instance
     else:
