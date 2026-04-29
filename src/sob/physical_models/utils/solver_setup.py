@@ -67,6 +67,7 @@ class RunnerOptions:
             base_path = Path.cwd() / folder_map[system] / "OpenRadioss"
 
             if not base_path.exists():
+                print(f"OpenRadioss not found at {base_path}. Downloading...")
                 platform_det.download_zip_openradioss()
 
             self.open_radioss_main_path = base_path.resolve()

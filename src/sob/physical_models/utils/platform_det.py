@@ -62,8 +62,6 @@ def download_zip_openradioss() -> str:
     extract_path = home_dir / f"OpenRadioss_{system_lower}64"
 
 
-    
-
     # Stream download (memory efficient)
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
