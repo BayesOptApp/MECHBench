@@ -1,3 +1,5 @@
 gmsh>=4.13.1
 vtk>=9.3.1
 numpy>=2.0.1
+requests>=2.31.0
+ioh>=0.3.19
