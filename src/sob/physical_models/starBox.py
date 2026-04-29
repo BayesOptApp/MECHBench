@@ -35,7 +35,6 @@ class StarBox(AbstractPhysicalModel):
         super().__init__(dimension, 
                          output_data, 
                          runner_options,
-                         sequential_id_numbering,
                          root_folder)
         # 1 -> square
         # 2 -> rectangular

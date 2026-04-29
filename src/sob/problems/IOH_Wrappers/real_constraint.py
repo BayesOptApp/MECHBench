@@ -32,11 +32,10 @@ class IOH_Real_Constraint_Wrapper(RealConstraint):
         assert callable(constraint_function), "The constraint function must be callable."
 
         super().__init__(constraint_function, # the function to compute the constraint value (check the name after debugging)
-                         weight=weight,
-                         exponent=exponent,
-                         name=name,
-                         enforced=0, # NOTE: Set to 0 for now, to set it to be not enforced. Can be modified later.
-                            )
+                         weight,
+                         exponent,
+                         0, # NOTE: Set to 0 for now, to set it to be not enforced. Can be modified later.
+                         name)
         
         #NOTE: Attempt to rewrite the `compute_violation` method if needed.
 

@@ -4,7 +4,7 @@ import pandas as pd
 # Import the platform
 import platform
 
-from src.sob.problems import IOH_Single_Objective
+from src.sob.problems import IOH_Constrained_Single_Objective
 import ioh.iohcpp.logger as IOHLogger
 
 
@@ -26,7 +26,7 @@ else:
     orss_main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
-                 "write_vtk":True,
+                 "write_vtk":False,
                  "np":4,
                  "nt":1,
                  "h_level":1,
@@ -35,7 +35,7 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 
 def mult1(x:list, *output_data,**kwargs)->float:
     r"""
-    This is a function definition to evaluate the SEA from the absorbed energy and mass values.
+    This is a function definition to evaluate the mass from the output data.
 
     Args:
         x (list): The input variable list (not used in this function but required for compatibility).
@@ -45,45 +45,64 @@ def mult1(x:list, *output_data,**kwargs)->float:
     """
     # Get the keys and values from kwargs
 
-    idx_1 = kwargs.get('absorbed_energy',None)
-    idx_2 = kwargs.get('mass',None)
 
-    if idx_1 is None:
-        raise Exception("The absorbed energy value must be provided in the kwargs.")
+    idx_2 = kwargs.get('mass',None)
     
     if idx_2 is None:
         raise Exception("The mass value must be provided in the kwargs.")
     
-    return -1*output_data[idx_1]/output_data[idx_2]
+    #return -1*output_data[idx_1]/output_data[idx_2]
+    return output_data[idx_2]
+
+def mult2(x:list, *output_data,**kwargs)->float:
+    r""" # 
+    This is a function definition to evaluate the intrusion from the output data.
+
+    Args:
+        x (list): The input variable list (not used in this function but required for compatibility).
+        output_data (tuple): A tuple containing the output data from the physical model.
+        kwargs: Additional keyword arguments that should include 'intrusion' key. The value
+                corresponding to this key indicates the index in output_data where the intrusion value is located.
+    """
+
+    idx = kwargs.get('intrusion',None)
+    if idx is None:
+        raise Exception("The intrusion value must be provided in the kwargs.")
+    
+    output = max(output_data[idx]/50.0-1.0,0.0)  #
+    
+    return output   # Constraint: intrusion must be less than 4000.0
 
 def main():
 
     # Generate a logger
-    triggers:list = [IOHLogger.trigger.ALWAYS]
-    additional_properties = [IOHLogger.property.RAWYBEST]
+    triggers:list = [IOHLogger.trigger.OnViolation(),]
+    additional_properties = [IOHLogger.property.RAWYBEST, IOHLogger.property.CURRENTY,IOHLogger.property.CURRENTBESTY
+                             ,IOHLogger.property.VIOLATION]
 
     logger = IOHLogger.Analyzer( triggers=triggers,
                                  additional_properties=additional_properties,
-                                 root="results/run3",
+                                 root="results/run_constrained_1",
                                  folder_name="test_run",
                                  algorithm_name="Random_Search",
                                  store_positions=True
                                  )
     
     # Create the problem instance
-    problem_instance = IOH_Single_Objective(model_number=2,
+    problem_instance = IOH_Constrained_Single_Objective(model_number=2,
                                                     dimension=5,
                                                     runner_options=runnerOptions,
-                                                    output_data_labels=["mass",'absorbed_energy'],
-                                                    problem_name="Test_Problem",
-                                                    functional_definition=mult1,
+                                                    output_data_labels=["mass","intrusion"],
+                                                    functional_definition_objective=mult1,
+                                                    functional_definition_constraints=[mult2],
+                                                    problem_name="Test_Problem_Constrained",
                                                     root_folder=logger.output_directory
                                    )
     
     # Attach the logger to the problem instance
     problem_instance.attach_logger(logger)
 
-    for i in range(50):
+    for i in range(10):
         vector = np.random.uniform(-5,5,(5,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
         print(f"Evaluating vector: {vector}")
         obj_value = problem_instance(vector)

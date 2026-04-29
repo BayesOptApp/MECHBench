@@ -68,6 +68,7 @@ def get_problem(model_type:int,
         problem_instance = StarBox(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
+                                   sequential_id_numbering=False,
                                    **kwargs)
         return problem_instance
     elif model_type==2:

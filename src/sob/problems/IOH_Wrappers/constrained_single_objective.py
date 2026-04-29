@@ -3,8 +3,12 @@ from typing import List, Callable, Optional, Any, Union
 from pathlib import Path
 from ioh.iohcpp.problem import RealSingleObjective
 from ioh.iohcpp import RealBounds, RealSolution, RealConstraint
-from src.sob.problems.IOH_Wrappers.real_constraint import IOH_Real_Constraint_Wrapper
+from ioh.iohcpp import ConstraintEnforcement
+
+#from src.sob.problems.IOH_Wrappers.real_constraint import IOH_Real_Constraint_Wrapper
 from src.sob.physical_models import get_model, AbstractPhysicalModel
+
+
 
 class IOH_Constrained_Single_Objective_Wrapper(RealSingleObjective):
     """
@@ -20,7 +24,8 @@ class IOH_Constrained_Single_Objective_Wrapper(RealSingleObjective):
             functional_definition_constraints: Union[List[Callable],Callable],
             problem_name: str,
             runner_options: dict,
-            root_folder: Optional[Union[str,Path]]=None,   
+            root_folder: Optional[Union[str,Path]]=None, 
+            problem_id: int=10000,  
             instance_id: int=1,
             )->None:
         r"""
@@ -44,25 +49,30 @@ class IOH_Constrained_Single_Objective_Wrapper(RealSingleObjective):
 
         self._functional_definition_objective = functional_definition_objective
 
-        assert functional_definition_constraints is not None, "A functional definition for the constraints must be provided."
-        if isinstance(functional_definition_constraints, list):
-            for func in functional_definition_constraints:
-                assert callable(func), "Each functional definition for the constraints must be callable."
+        # Normalize constraints to a list
+        if callable(functional_definition_constraints):
+            constraint_list = [functional_definition_constraints]
         else:
-            assert callable(functional_definition_constraints), "The functional definition for the constraints must be callable."
+            constraint_list = functional_definition_constraints
+
+        # Create the decorator once
+        constraint_decorator = make_constraint_decorator(self)
+
+        
+
 
         # Set the bounds
         bounds = RealBounds(size=dimension,lb=-5.0, ub=5.0) # Fixed bounds for now, can be modified later
-
-
         
         optimum = RealSolution(x = [0.0 for _ in range(dimension)], y = -np.inf) # Arbitrary optimum, can be modified later
 
-        constraint_list = [IOH_Real_Constraint_Wrapper(constraint_function=functional_definition_constraints[i],
-                                                       name=f"Constraint_{i+1}") for i in range(len(functional_definition_constraints))] if isinstance(functional_definition_constraints, 
-                                                                                                                                                       list) else [IOH_Real_Constraint_Wrapper(constraint_function=functional_definition_constraints,
-                                                                                                                                                                                                 name="Constraint_1")]
-
+        # Set the physical model based on the provided model number and output data labels for the objective
+        self._physical_model: AbstractPhysicalModel = get_model(model_type=model_number,
+                                                                          dimension=dimension,
+                                                                          output_data=output_data_labels,
+                                                                          runner_options=runner_options,
+                                                                          root_folder=root_folder
+                                                                        )
 
         # Initialize the base single-objective problem
         super().__init__(name = problem_name,
@@ -70,21 +80,42 @@ class IOH_Constrained_Single_Objective_Wrapper(RealSingleObjective):
                          instance = instance_id,
                          is_minimization=True,
                          bounds=bounds, # This is fixed for now, can be modified later
-                         constraints=constraint_list,
+                         #constraints=functional_definition_constraints,
+                         constraints=[],
                          optimum= optimum)
+        
 
-        # Set the physical model based on the provided model number and output data labels for the objective
-        self._physical_model: AbstractPhysicalModel = get_model(model_type=model_number,
-                                                                          dimension=dimension,
-                                                                          output_data_labels=output_data_labels,
-                                                                          runner_options=runner_options,
-                                                                          root_folder=root_folder
-                                                                        )
+        # Intialize the output values as an empty list
+        self._output_values: Any = []
+
+        # Set the problem ID
+        super().set_id(problem_id)
+
+        # Set the instance ID
+        super().set_instance(instance_id)
+        
+        # Convert python constraints → IOH constraints
+        for ii, func in enumerate(constraint_list):
+
+            wrapped = constraint_decorator(func)
+
+            ioh_constraint = RealConstraint(
+                wrapped,
+                name=f"constraint_{ii+1}",
+                weight=1.0,
+                exponent=1.0,
+                enforced=ConstraintEnforcement.HIDDEN # Not enforced for now. Hidden constraints do not affect the optimization process.
+            )
+
+            # Register constraint with IOH
+            self.add_constraint(ioh_constraint)
+
+
+        
+        
     
     def evaluate(self, 
-                 x: List[float], 
-                 *args,
-                 **kwargs) -> float:
+                 x: List[float]) -> float:
         r"""
         Evaluate the objective function at the given point. This method runs the physical model
         and computes the objective value using the provided functional definition.
@@ -97,49 +128,53 @@ class IOH_Constrained_Single_Objective_Wrapper(RealSingleObjective):
 
         Args:
             x (List[float]): The input vector where the objective function is evaluated. (Unused here, but kept for compatibility)
-            *args: Additional positional arguments for the functional definition. This is typically the output data from the physical model.
-            **kwargs: Additional keyword arguments for the functional definition.
+            
 
         Returns:
             float: The computed objective value.
         """
         
-        # Tranform the args to output values
-        args_list = list(args)
-        output_values:Union[List[float],float] = args_list if len(args_list) > 1 else args_list[0]
+        # Get the output data from the physical model
+        output_values = self.output_values
 
 
         # Compute the objective value using the functional definition
-        objective_value = self._functional_definition_objective(output_values,
-                                                                **kwargs)
+        objective_value = self._functional_definition_objective(x,
+                                                                *output_values,
+                                                                **self.generate_kwargs())
 
         return objective_value
-    
 
-    def __call__(self, x: List[float]) -> float:
-
+    def __call__(self, x:list) -> float:
         # Run the physical model to get output data
-        output_values = self._physical_model(x,deck_id=self.state.evaluations+1)
+        self._output_values = self._physical_model(x,deck_id=self.state.evaluations+1)
 
         # Generate kwargs for the functional definition
-        kwargs = {self._physical_model.output_data[ii]: output_values[ii] for ii in range(len(self._physical_model.output_data))} if isinstance(output_values, (list,tuple)) else {self._physical_model.output_data: output_values}
+        kwargs = self.generate_kwargs()
 
-        constraint_values:List[float] = []
-
-        # For all the constraints, we need to evaluate them here as well
-        for constraint in self.constraints:
-            constraint_value = constraint(x, *output_values, **kwargs)
-            constraint_values.append(constraint_value)
-
-
-        # Call the evaluate method to compute the objective value
-        obj = self.evaluate(x, *output_values, **kwargs)
-
-
-        return obj
+        # Call the super __call__
+        val = super().__call__(x)
+        return val
     
+    def generate_kwargs(self) -> dict:
+        r"""
+        Generate keyword arguments for the functional definitions based on the output data labels.
+
+        Returns:
+            dict: A dictionary mapping output data labels to their corresponding indices.
+        """
+        return {self.output_data_labels[ii]: ii for ii in range(len(self.output_data_labels))}
 
 
+    @property
+    def output_values(self) -> Any:
+        r"""
+        Returns the output values from the last evaluation of the physical model.
+
+        Returns:
+            Any: The output values from the physical model.
+        """
+        return self._output_values
 
 
     @property
@@ -191,7 +226,7 @@ class IOH_Constrained_Single_Objective_Wrapper(RealSingleObjective):
         Returns:
             Union[List[str]]: The list of output data labels.
         """
-        return self.physical_model.output_data
+        return self.physical_model.output_data if isinstance(self.physical_model.output_data, list) else [self.physical_model.output_data]
     
     @output_data_labels.setter
     def output_data_labels(self, labels: Union[List[str],str]):
@@ -246,3 +281,21 @@ class IOH_Constrained_Single_Objective_Wrapper(RealSingleObjective):
         """
 
         raise NotImplementedError("Setting problem name is not implemented yet.")
+
+# The following is a function wrapper for each of the constraints 
+def make_constraint_decorator(problem: IOH_Constrained_Single_Objective_Wrapper):
+    """
+    Creates a decorator-like wrapper that transforms a Python constraint function
+    into an IOH-compatible constraint callback.
+    """
+    def constraint_wrapper(func: Callable):
+        
+        def wrapped_constraint(x: list) -> float:
+            # Use latest model output
+            output_values = problem.output_values
+            kwargs = problem.generate_kwargs()
+            return func(x, *output_values, **kwargs)
+        
+        return wrapped_constraint
+    
+    return constraint_wrapper
