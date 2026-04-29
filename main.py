@@ -23,13 +23,9 @@ if linux_system:
 else:
     orss_main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
 
-runnerOptions = {"open_radioss_main_path":orss_main_path,
-                 "write_vtk":True,
-                 "np":4,
-                 "nt":1,
-                 "h_level":1,
-                 "gmsh_verbosity":0,
-}
+#runnerOptions = {"open_radioss_main_path":orss_main_path}
+
+runnerOptions = {"np":1}
 
 def main():
     sim_id = 236 # Attribute to define the simulation id and connected results folder name

@@ -5,6 +5,8 @@ __author__ = "Ivan Olarte Rodriguez"
 
 
 # Module Imports
+from sys import platform
+import os
 import warnings
 from collections import namedtuple, OrderedDict
 from pathlib import Path
@@ -15,24 +17,11 @@ from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass, fields
 from typing import Any, Dict
 
+import src.sob.physical_models.utils.platform_det as platform_det
 
 @dataclass
 class RunnerOptions:
-    """
-    Clean and safe configuration container for running OpenRadioss cases.
-    Replaces the old dynamic RunnerOptions(dictionary) class.
-
-    - No fuzzy matching
-    - No eval()
-    - No attribute merging
-    - No recursion
-    - Safe defaults
-    """
-
-    # ---- Core configuration fields ----
-    open_radioss_main_path: Path = Path("/home/ivanolar/Documents/OpenRadioss2/" + \
-                                        "OpenRadioss_linux64/OpenRadioss/Tools/openradioss_gui")
-    
+    open_radioss_main_path: Optional[Path] = None
 
     write_vtk: int = 0
     h_level: int = 1
@@ -41,62 +30,72 @@ class RunnerOptions:
     gmsh_verbosity: int = 0
     save_mesh_vtk: int = 0
 
-    # -----------------------------------
-    # Post-initialization validation
-    # -----------------------------------
     def __post_init__(self):
+        self._validate()
+        self._setup_openradioss_path()
 
-        if isinstance(self.open_radioss_main_path, str):
-            self.open_radioss_main_path = Path(self.open_radioss_main_path)
-            
-        # integer fields that must be >= 1
+    # ---------------------------
+    # Validation
+    # ---------------------------
+    def _validate(self):
         for name in ("h_level", "nt", "np"):
             val = getattr(self, name)
             if not isinstance(val, int) or val < 1:
-                raise ValueError(f"{name} must be a positive integer (>= 1).")
+                raise ValueError(f"{name} must be >= 1")
 
-        # binary fields: 0 or 1
         for name in ("write_vtk", "save_mesh_vtk"):
-            val = getattr(self, name)
-            if val not in (0, 1):
-                raise ValueError(f"{name} must be either 0 or 1.")
+            if getattr(self, name) not in (0, 1):
+                raise ValueError(f"{name} must be 0 or 1")
 
-        # gmsh verbosity allowed values
         if self.gmsh_verbosity not in (0, 1):
-            raise ValueError("gmsh_verbosity must be 0 or 1.")
-        
-        # Check that the open_radioss_main_path exists
-        if not self.open_radioss_main_path.exists():
-            raise ValueError(f"open_radioss_main_path '{self.open_radioss_main_path}' does not exist.")
+            raise ValueError("gmsh_verbosity must be 0 or 1")
 
-    # -----------------------------------
-    # Construction helpers
-    # -----------------------------------
+    # ---------------------------
+    # Path setup
+    # ---------------------------
+    def _setup_openradioss_path(self):
+        system = platform_det.platform_detection()
+
+        if self.open_radioss_main_path is None:
+            platform_det.raise_if_not_allowed_platform()
+
+            folder_map = {
+                "Linux": "OpenRadioss_linux64",
+                "Windows": "OpenRadioss_win64",
+            }
+
+            base_path = Path.cwd() / folder_map[system] / "OpenRadioss"
+
+            if not base_path.exists():
+                platform_det.download_zip_openradioss()
+
+            self.open_radioss_main_path = base_path.resolve()
+
+        else:
+            self.open_radioss_main_path = Path(
+                self.open_radioss_main_path
+            ).resolve()
+
+            if not self.open_radioss_main_path.exists():
+                raise ValueError(
+                    f"Path does not exist: {self.open_radioss_main_path}"
+                )
+
+    # ---------------------------
+    # Helpers
+    # ---------------------------
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "RunnerOptions":
-        """
-        Safe constructor to initialize from a dictionary.
-        Unknown keys are ignored.
-        """
         valid = {f.name for f in fields(cls)}
-        filtered = {k: v for k, v in d.items() if k in valid}
-        return cls(**filtered)
+        return cls(**{k: v for k, v in d.items() if k in valid})
 
     def as_dict(self) -> Dict[str, Any]:
-        """Return a standard dictionary representation of this configuration."""
         return {f.name: getattr(self, f.name) for f in fields(self)}
 
-    # -----------------------------------
-    # Utility
-    # -----------------------------------
     def normalize(self):
-        """
-        Forces integer fields to be integers.
-        Useful if values come from JSON or command-line parsing.
-        """
-        self.h_level = int(self.h_level)
-        self.nt = int(self.nt)
-        self.np = int(self.np)
-        self.write_vtk = int(self.write_vtk)
-        self.save_mesh_vtk = int(self.save_mesh_vtk)
-        self.gmsh_verbosity = int(self.gmsh_verbosity)
+        for name in (
+            "h_level", "nt", "np",
+            "write_vtk", "save_mesh_vtk",
+            "gmsh_verbosity"
+        ):
+            setattr(self, name, int(getattr(self, name)))
