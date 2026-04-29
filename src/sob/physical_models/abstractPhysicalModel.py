@@ -335,11 +335,11 @@ class AbstractPhysicalModel(ABC):
         self.generate_input_deck(variable_array, deck_id=deck_id)
 
         # Optional: small caching to avoid recomputing expensive quantities repeatedly
-        _mass = lambda: self.mass_calculation(deck_id=deck_id)
-        _energy = lambda: self.absorbed_energy_calculation()
-        _intrusion = lambda: self.intrusion_calculation(deck_id=deck_id)
-        _mean_force = lambda: self.mean_force_calculation(deck_id=deck_id)
-        _peak_force = lambda: self.peak_force_calculation(deck_id=deck_id)
+        _mass = lambda: float(self.mass_calculation(deck_id=deck_id))
+        _energy = lambda: float(self.absorbed_energy_calculation())
+        _intrusion = lambda: float(self.intrusion_calculation(deck_id=deck_id))
+        _mean_force = lambda: float(self.mean_force_calculation(deck_id=deck_id))
+        _peak_force = lambda: float(self.peak_force_calculation(deck_id=deck_id))
 
         def handle_single(key: str) -> float:
             table = {
