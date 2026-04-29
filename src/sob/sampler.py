@@ -30,12 +30,14 @@ class Sampler:
                                     dimension=dimension,
                                     runner_options=runner_options,
                                     output_data=output_data,
-                                    sequential_id_numbering=True, # Set to False for Sampler usage
                                     root_folder=root_folder,
                                     )
         
         # Initialize observer to None
         self._observer:Optional[Observer] = None
+
+        # Initialize a counter for evaluations
+        self._evaluation_count:int = 0
     
     def __call__(self, 
                  vector:Union[List[float],np.ndarray], 
@@ -57,8 +59,11 @@ class Sampler:
         if isinstance(vector, np.ndarray):
             vector = vector.tolist()
         
+
+        self._evaluation_count += 1
+        
         # Evaluate the model with the provided vector
-        result = self.model(vector, )
+        result = self.model(vector, self._evaluation_count, *args, **kwargs)
 
 
         # If observer is set, log the result

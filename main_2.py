@@ -27,7 +27,7 @@ else:
 
 runnerOptions = {"open_radioss_main_path":orss_main_path,
                  "write_vtk":True,
-                 "np":8,
+                 "np":4,
                  "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
@@ -43,15 +43,15 @@ def main():
     
     observer_instance = Observer(root="results/run1",folder_name="test_run")
 
-    sampler_instance.attach_observer(observer_instance)
+    #sampler_instance.attach_observer(observer_instance)
 
-    for i in range(10):
+    for i in range(5):
         vector = np.random.uniform(-5,5,(5,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
         print(f"Evaluating vector: {vector}")
         obj_value = sampler_instance(vector)
         print(obj_value)
     
-    sampler_instance.detach_observer()
+    #sampler_instance.detach_observer()
 
     
 

@@ -17,6 +17,7 @@ _PRINCIPAL_OUTPUTS = [
     'max_impact_force'
 ]
 
+
 _COMPOSITE_OUTPUTS = [
     'specific_energy_absorbed',
     'load_uniformity',
@@ -39,7 +40,6 @@ class AbstractPhysicalModel(ABC):
                  dimension:int, 
                  output_data:Union[Iterable,str], 
                  runner_options:dict,
-                 sequential_id_numbering:bool=True,
                  root_folder:Optional[Union[str,Path]]=None) -> None:
         r"""
         Initializes the AbstractPhysicalModel with the specified parameters.
@@ -85,7 +85,6 @@ class AbstractPhysicalModel(ABC):
         
         self.dimension:int = dimension
         self.output_data:Union[Iterable,str] = output_data
-        self.__sequential_id_numbering:bool = sequential_id_numbering
 
         # Assign the Properties to the case
         self._runner_options = RunnerOptions.from_dict(runner_options)
@@ -154,7 +153,9 @@ class AbstractPhysicalModel(ABC):
         problem_space_variable = lower + (search_space_variable-self.search_space[0])*scale
         return problem_space_variable
 
-    def generate_input_deck(self, variable_array):
+    def generate_input_deck(self, 
+                            variable_array:Union[List[float],np.ndarray], 
+                            deck_id:int) -> None:
         # Change the simulation status
         self.sim_status = 0
         self._validate_variable_array(variable_array)
@@ -165,7 +166,7 @@ class AbstractPhysicalModel(ABC):
             fem_space_variable_array.append(mapped_var)
 
         original_dir:Path = self.root_folder.absolute()
-        dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
+        dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
         print('######################################################\n')
         print(dir_name)
         working_dir = original_dir.joinpath(dir_name)
@@ -177,22 +178,23 @@ class AbstractPhysicalModel(ABC):
         self._write_input_file(fem_space_variable_array)
         os.chdir(original_dir.as_posix())
 
-        if self.__sequential_id_numbering:
-            self.deck_id += 1 # update the problem id for the input deck generation
     
     @abstractmethod
     def _write_input_file(self, fem_space_variable_array):
         pass
     
-    def run_simulation(self,runStarter=False):
+    def run_simulation(self,
+                       deck_id:int,
+                       runStarter:bool=False):
+        
+
         if self.input_file_name is None:
             raise ValueError("input_file_name must be provided or defined in the subclass.")
         # make problem id back to original, since it has been updated when generate_input_deck has been called
-        if self.__sequential_id_numbering:
-            self.deck_id -= 1
+
 
         original_dir:Path = self.root_folder.absolute()
-        dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
+        dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
         working_dir = original_dir.joinpath(dir_name)
         input_file_path = working_dir.joinpath(self.input_file_name)
 
@@ -213,8 +215,10 @@ class AbstractPhysicalModel(ABC):
                         np_int=self._runner_options.np,
                         nt_int=self._runner_options.nt)
 
-    def load_output_data_frame(self):
-        dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
+    def load_output_data_frame(self,
+                               deck_id:int):
+        
+        dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
         original_dir:Path = self.root_folder.absolute()    
         working_dir = original_dir.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
@@ -222,12 +226,11 @@ class AbstractPhysicalModel(ABC):
         self.output_data_frame = pd.read_csv(output_file_path.as_posix())
         self.output_data_frame.columns = self.output_data_frame.columns.str.replace(' ', '')
         
-        # update problem id again
-        if self.__sequential_id_numbering:
-            self.deck_id += 1
 
-    def extract_mass_from_file(self):
-        dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
+    def extract_mass_from_file(self, 
+                               deck_id:int)->float:
+
+        dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
         original_dir:Path = self.root_folder.absolute()
         working_dir = original_dir.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
@@ -250,10 +253,12 @@ class AbstractPhysicalModel(ABC):
         return ValueError("Mass value output failed!")  # Return None if the mass value wasn't found 
 
 
-    def instrusion_calculation(self)->float:
+    def intrusion_calculation(self, 
+                               deck_id:int)->float:
+        
         if self.sim_status < 2 or self.output_data_frame is None: 
-            self.run_simulation()
-            self.load_output_data_frame()
+            self.run_simulation(deck_id=deck_id)
+            self.load_output_data_frame(deck_id=deck_id)
             self.sim_status = 2
 
         col = [col for col in self.output_data_frame.columns if self.track_node_key in col][2]
@@ -261,16 +266,15 @@ class AbstractPhysicalModel(ABC):
 
         return abs(self.output_data_frame[col].abs().max()) - self.fem_model.impactor_offset
     
-    def mass_calculation(self)->float:
+    def mass_calculation(self,
+                         deck_id:int)->float:
         if self.sim_status < 1: 
-            self.run_simulation(runStarter=True)
+            self.run_simulation(runStarter=True,
+                                deck_id=deck_id)
             # Change the status
             self.sim_status = 1
 
-        val:float = self.extract_mass_from_file() - self.fem_model.rigid_mass
-
-        if self.__sequential_id_numbering:
-            self.deck_id +=1  
+        val:float = self.extract_mass_from_file(deck_id=deck_id) - self.fem_model.rigid_mass
 
         return val
     
@@ -298,19 +302,19 @@ class AbstractPhysicalModel(ABC):
             # an impulse curve and we return it as is.
             return impulse_vec
 
-    def peak_force_calculation(self) -> float:
+    def peak_force_calculation(self, deck_id:int) -> float:
         if self.sim_status < 2 or self.output_data_frame is None: 
-            self.run_simulation()
+            self.run_simulation(deck_id=deck_id)
             self.sim_status = 2
-            self.load_output_data_frame()
+            self.load_output_data_frame(deck_id=deck_id)
         force_data = self._get_force_data()
         
         return np.abs(np.max(force_data)).astype(float).ravel()[0]
 
-    def mean_force_calculation(self) -> float:
+    def mean_force_calculation(self,deck_id:int) -> float:
         if self.sim_status < 2 or self.output_data_frame is None: 
-            self.run_simulation()
-            self.load_output_data_frame()
+            self.run_simulation(deck_id=deck_id)
+            self.load_output_data_frame(deck_id=deck_id)
             self.sim_status = 2
 
 
@@ -320,77 +324,79 @@ class AbstractPhysicalModel(ABC):
     
 
 
-    def __call__(self, variable_array: list, deck_id: int = -1) -> Union[float, List[float]]:
-        
-        if not self.__sequential_id_numbering:
-            self.deck_id = deck_id
-        
-        # Set the sim status to 0
+    def __call__(self, variable_array: list, deck_id: int) -> Union[float, List[float]]:
+        # validate the deck id
+        assert isinstance(deck_id, int), "The deck_id must be an integer."
+
+        # Reset simulation status
         self.sim_status = 0
 
         # Generate the input deck
-        self.generate_input_deck(variable_array)
+        self.generate_input_deck(variable_array, deck_id=deck_id)
+
+        # Optional: small caching to avoid recomputing expensive quantities repeatedly
+        _mass = lambda: self.mass_calculation(deck_id=deck_id)
+        _energy = lambda: self.absorbed_energy_calculation()
+        _intrusion = lambda: self.intrusion_calculation(deck_id=deck_id)
+        _mean_force = lambda: self.mean_force_calculation(deck_id=deck_id)
+        _peak_force = lambda: self.peak_force_calculation(deck_id=deck_id)
 
         def handle_single(key: str) -> float:
-            return {
+            table = {
+                "mass": lambda: _mass(),
+                "absorbed_energy": lambda: _energy(),
+                "intrusion": lambda: _intrusion(),
+                "mean_impact_force": lambda: _mean_force(),
+                "max_impact_force": lambda: _peak_force(),
 
-                'mass': self.mass_calculation,
+                "specific_energy_absorbed": lambda: _energy() / _mass(),
 
-                'absorbed_energy': self.absorbed_energy_calculation,
+                "load_uniformity": lambda: abs(_peak_force() / _mean_force()),
 
-                'intrusion': self.instrusion_calculation,
+                "penalized_sea": lambda: (
+                    -(_energy() / _mass())
+                    if _intrusion() <= 60
+                    else -100 * (_intrusion() - 60)
+                ),
 
-                'mean_impact_force': self.mean_force_calculation,
+                "penalized_mass": lambda: (
+                    _mass()
+                    if _intrusion() <= 50
+                    else 4.25952 + 10 * (_intrusion() / 50 - 1)
+                ),
+            }
 
-                'max_impact_force': self.peak_force_calculation,
+            fn = table.get(key)
+            return fn() if fn is not None else float("nan")
 
-                'specific_energy_absorbed': lambda: self.absorbed_energy_calculation() / self.mass_calculation(),
-
-                'load_uniformity': lambda: abs(self.peak_force_calculation() / self.mean_force_calculation()),
-
-                'penalized_sea': lambda: -(
-
-                    self.absorbed_energy_calculation() / self.mass_calculation()
-
-                    if self.instrusion_calculation() <= 60
-
-                    else -100 * (self.instrusion_calculation() - 60)),
-
-                'penalized_mass': lambda: (self.mass_calculation()
-
-                                           if self.instrusion_calculation() <= 50
-
-                                           else 4.25952 + 10 * (self.instrusion_calculation() / 50 - 1))
-
-
-
-            }.get(key, lambda: np.nan)()
-
+        # --- Single output case ---------------------------------------------------
         if isinstance(self.output_data, str):
             return handle_single(self.output_data)
 
+        # --- Multiple output case -------------------------------------------------
         elif isinstance(self.output_data, list):
-            result = []
-            intrusion_index = None
             output_keys = self.output_data.copy()
+            result = []
 
-            if 'intrusion' in output_keys:
-                intrusion_index = output_keys.index('intrusion')
+            # Handle intrusion position separately
+            intrusion_index = None
+            if "intrusion" in output_keys:
+                intrusion_index = output_keys.index("intrusion")
                 output_keys.pop(intrusion_index)
 
+            # Compute metrics except intrusion
             for key in output_keys:
                 result.append(handle_single(key))
 
+            # Insert intrusion back in correct position
             if intrusion_index is not None:
-                result.insert(intrusion_index, self.instrusion_calculation())
+                result.insert(intrusion_index, _intrusion())
 
             return result
 
         return None
 
-    @property
-    def deck_id(self)->int:
-        return self._deck_id
+
     
     @property
     def dimension(self)->int:
@@ -414,23 +420,6 @@ class AbstractPhysicalModel(ABC):
     @property
     def output_data(self)->Union[List[str],str]:
         return self._output_data
-    
-    @property
-    def sequential_id_numbering(self):
-        return self.__sequential_id_numbering
-    
-
-    @deck_id.setter
-    def deck_id(self,new_deck_id:int)->None:
-        
-        if not isinstance(new_deck_id,int):
-            raise TypeError("The type of the object is not correct")
-        
-        else:
-            if new_deck_id <= 0:
-                raise ValueError("The value must be greater than 0")
-            # Assign the new problem ID
-            self._deck_id = new_deck_id
     
 
     @output_data.setter

@@ -26,8 +26,8 @@ class ThreePointBending(AbstractPhysicalModel):
                  dimension, 
                  output_data, 
                  runner_options:dict,
-                 sequential_id_numbering:bool,
                  root_folder:Optional[Union[str,Path]]=None) -> None:
+        
         # Get the output data if it is not provided
         if output_data is None:
             output_data = "penalized_mass"
@@ -40,7 +40,12 @@ class ThreePointBending(AbstractPhysicalModel):
                     raise ValueError(f"The output data {elem} is not allowed for the Three Point Bending problem.")
 
         
-        super().__init__(dimension, output_data, runner_options,sequential_id_numbering, root_folder)
+        super().__init__(
+                         dimension, 
+                         output_data, 
+                         runner_options, 
+                         root_folder
+                         )
         # 1 -> all 5 shell thickness vary with same value. 
         # 2 -> only first and the last shell thickness vary, other fixed with middle value. 
         # 3 -> the first, middle, and last shell thickness vary. 
@@ -56,11 +61,10 @@ class ThreePointBending(AbstractPhysicalModel):
         self.track_node_key = 'intrusionTrack99999' # the key of the intrusion in the output csv file
         self.impactor_force_key = "TH_RWALL1"
 
-        if self.sequential_id_numbering:
-            self.deck_id = ThreePointBending.instance_counter
-            ThreePointBending.instance_counter+=1
 
-    def generate_input_deck(self, variable_array):
+    def generate_input_deck(self, 
+                            variable_array, 
+                            deck_id: int):
         '''
         Special generate_input_deck function for Three point bending model, transform it into thickness mapping.
         '''
@@ -73,22 +77,21 @@ class ThreePointBending(AbstractPhysicalModel):
             thickness_array.append(mapped_var)
 
         original_dir = self.root_folder.absolute()
-        dir_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
+        dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
         working_dir = original_dir.joinpath( dir_name)
         if not working_dir.exists():
             working_dir.mkdir(parents=True, exist_ok=True)
 
         os.chdir(working_dir.absolute().as_posix())
-        self._write_input_file(thickness_array)
+        self._write_input_file(thickness_array, deck_id=deck_id)
         os.chdir(original_dir.absolute().as_posix())
 
-        if self.sequential_id_numbering:
-            self.deck_id = ThreePointBending.instance_counter
-            ThreePointBending.instance_counter+=1
 
-    def _copy_files_to_deck(self):
+    def _copy_files_to_deck(self,
+                            deck_id:int):
+        
         # Get the path to the lib directory relative to the current file
-        deck_name = f'{self.__class__.__name__.lower()}_deck{self.deck_id}'
+        deck_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
 
         lib_dir = Path(os.path.join(os.path.dirname(__file__), 'lib'))
         
@@ -107,8 +110,10 @@ class ThreePointBending(AbstractPhysicalModel):
             dest_path = dest_folder.joinpath(file_name)
             shutil.copyfile(source_path.as_posix(), dest_path.as_posix())
 
-    def _write_input_file(self, thickness_array):
-        self._copy_files_to_deck()
+    def _write_input_file(self, 
+                          thickness_array,
+                          deck_id: int):
+        self._copy_files_to_deck(deck_id=deck_id)
         self.mesh = ThreePointBendingMesh(thickness_array,
                                           h_level=self._runner_options.h_level,
                                           gmsh_verbosity=self._runner_options.gmsh_verbosity
@@ -117,7 +122,7 @@ class ThreePointBending(AbstractPhysicalModel):
         self.fem_model = ThreePointBendingModel(self.mesh)
         self.fem_model.write_input_file(thickness_array)
     
-    def mass_calculation(self):
+    def mass_calculation(self, deck_id:int) -> float:
         r"""
         This is a refactoring of the mass calculation function, which is
         used to calculate the mass of the model. The function is called
@@ -126,9 +131,9 @@ class ThreePointBending(AbstractPhysicalModel):
         Since the mass is computed in metric tons, then this function
         converts the mass to kg. 
         """
-        return super().mass_calculation()*1000.0
+        return super().mass_calculation(deck_id=deck_id)*1000.0
     
-    def peak_force_calculation(self) -> float:
+    def peak_force_calculation(self, deck_id:int) -> float:
         r"""
         This is a refactoring of the peak force calculation function, which isroot_folder:Optional[Union[str,Path]]
         used to calculate the peak force of the model. The function is called
@@ -137,9 +142,9 @@ class ThreePointBending(AbstractPhysicalModel):
         Since the force is computed in N, then this function converts the
         force to kN.
         """
-        return super().peak_force_calculation()/1000.0
+        return super().peak_force_calculation(deck_id=deck_id)/1000.0
     
-    def mean_force_calculation(self) -> float:
+    def mean_force_calculation(self, deck_id:int) -> float:
         r"""
         This is a refactoring of the mean force calculation function, which is
         used to calculate the mean force of the model. The function is called
@@ -148,7 +153,7 @@ class ThreePointBending(AbstractPhysicalModel):
         Since the force is computed in N, then this function converts the
         force to kN.
         """
-        return super().mean_force_calculation()/1000.0
+        return super().mean_force_calculation(deck_id=deck_id)/1000.0
     
     @property
     def forbidden_output_data(self)->List[str]:

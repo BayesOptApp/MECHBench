@@ -35,7 +35,6 @@ class StarBox(AbstractPhysicalModel):
         super().__init__(dimension, 
                          output_data, 
                          runner_options,
-                         sequential_id_numbering,
                          root_folder)
         # 1 -> square
         # 2 -> rectangular
@@ -53,9 +52,6 @@ class StarBox(AbstractPhysicalModel):
         self.track_node_key = 'DATABASE_HISTORY_NODE99999' 
         self.impactor_force_key = "TH-RWALL1"
 
-        if self.sequential_id_numbering:
-            self.deck_id = StarBox.instance_counter
-            StarBox.instance_counter+=1
     
     @staticmethod
     def _generate_variable_ranges_map(dimension:int)->List[tuple]:

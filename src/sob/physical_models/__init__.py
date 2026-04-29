@@ -2,11 +2,22 @@ from src.sob.physical_models.abstractPhysicalModel import AbstractPhysicalModel
 from typing import Optional, Iterable, Union
 from pathlib import Path
 
+
+def default_runner_options():
+    return {
+        "open_radioss_main_path": None,  # Must be provided by the user
+        "write_vtk": 0,
+        "h_level": 1,
+        "nt": 1,
+        "np": 1,
+        "gmsh_verbosity": 0,
+        "save_mesh_vtk": 0
+    }
+
 def get_model(model_type:int, 
                 dimension:int, 
-                runner_options:dict,
                 output_data:Optional[Union[Iterable,str]]=None,
-                sequential_id_numbering:bool=True,
+                runner_options:Optional[dict]=None,
                 root_folder:Optional[Union[str,Path]]=None,
                 **kwargs)->AbstractPhysicalModel:
     r'''
@@ -63,12 +74,16 @@ def get_model(model_type:int,
     sequential_id_numbering : bool
         If True, assigns sequential IDs to each problem instance for unique identification.
     '''
+
+    if runner_options is None:
+        runner_options = default_runner_options()
+    
+    
     if model_type==1:
         from src.sob.physical_models.starBox import StarBox
         problem_instance = StarBox(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    root_folder=root_folder,
                                    **kwargs)
         return problem_instance
@@ -77,7 +92,6 @@ def get_model(model_type:int,
         problem_instance = ThreePointBending(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    root_folder=root_folder,
                                    **kwargs)
         return problem_instance
@@ -86,7 +100,6 @@ def get_model(model_type:int,
         problem_instance = CrashTube(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    root_folder=root_folder,
                                    **kwargs)
         return problem_instance

@@ -4,11 +4,23 @@ from src.sob.physical_models.threePointBending import ThreePointBending
 from src.sob.physical_models.crashTube import CrashTube
 from typing import Optional, Iterable, Union
 
+
+def default_runner_options():
+    return {
+        "open_radioss_main_path": None,  # Must be provided by the user
+        "write_vtk": 0,
+        "h_level": 1,
+        "nt": 1,
+        "np": 1,
+        "gmsh_verbosity": 0,
+        "save_mesh_vtk": 0
+    }
+
+
 def get_problem(model_type:int, 
                 dimension:int, 
-                runner_options:dict,
                 output_data:Optional[Union[Iterable,str]]=None,
-                sequential_id_numbering:bool=True,
+                runner_options:Optional[dict]=None,
                 **kwargs)->AbstractPhysicalModel:
     r'''
     Generates a problem instance based on the specified model type and configuration.
@@ -64,25 +76,27 @@ def get_problem(model_type:int,
     sequential_id_numbering : bool
         If True, assigns sequential IDs to each problem instance for unique identification.
     '''
+
+    if runner_options is None:
+        runner_options = default_runner_options()
+
     if model_type==1:
         problem_instance = StarBox(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
+                                   sequential_id_numbering=False,
                                    **kwargs)
         return problem_instance
     elif model_type==2:
         problem_instance = ThreePointBending(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    **kwargs)
         return problem_instance
     elif model_type==3:
         problem_instance = CrashTube(dimension=dimension, 
                                    output_data=output_data, 
                                    runner_options=runner_options,
-                                   sequential_id_numbering=sequential_id_numbering,
                                    **kwargs)
         return problem_instance
     else:
