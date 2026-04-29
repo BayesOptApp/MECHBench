@@ -16,8 +16,8 @@ def default_runner_options():
 
 def get_model(model_type:int, 
                 dimension:int, 
-                runner_options:Optional[dict],
                 output_data:Optional[Union[Iterable,str]]=None,
+                runner_options:Optional[dict]=None,
                 root_folder:Optional[Union[str,Path]]=None,
                 **kwargs)->AbstractPhysicalModel:
     r'''
