@@ -15,12 +15,13 @@ the model is determined (mesh and fem data loaded) only when the variable array 
 
 
 def main():
-    sim_id = 236 # Attribute to define the simulation id and connected results folder name
+    sim_id = 237 # Attribute to define the simulation id and connected results folder name
     dim = 5#vector = [np.zeros((20,)).tolist()] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-    problem_id = 2 # 1: star box, 2: three point bending, 3: crash tube
+    problem_id = 1 # 1: star box, 2: three point bending, 3: crash tube
+
     vector = np.random.uniform(0,0,(dim,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
     print(f"Evaluating vector: {vector}")
-    f = sob.get_problem(problem_id,dim,["load_uniformity","intrusion"])
+    f = sob.get_problem(problem_id,dim)
     obj_value = f(vector,sim_id)
     print(obj_value)
     

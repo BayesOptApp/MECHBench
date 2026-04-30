@@ -27,8 +27,9 @@ __pycache__/
 # More Radioss DATA files
 *ThreePointBendingA*
 *ThreePointBendingT*
-*combineT
+*combineT*
 *combineA*
+*combine_*
 
 # (Optional) keep specific text files:
 # !README.txt
