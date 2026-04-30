@@ -8,13 +8,19 @@ import pandas as pd
 Added the following block to identify if the current system 
 '''
 
-runnerOptions = {"open_radioss_main_path":"/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/",
-                 "write_vtk":False,
-                 "np":4, # Number of processes to run the simulation
+#runnerOptions = {"open_radioss_main_path":"/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/",
+#                 "write_vtk":False,
+#                 "np":4, # Number of processes to run the simulation
+#                 "nt":1,
+#                 "h_level":1,
+#                 "gmsh_verbosity":0,
+#}   
+
+runnerOptions = {"np":1, # Number of processes to run the simulation
                  "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
-}   
+}
 
 r'''
 Once the optimization problem instance has been generate, 

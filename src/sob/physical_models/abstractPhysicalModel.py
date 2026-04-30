@@ -165,7 +165,7 @@ class AbstractPhysicalModel(ABC):
             mapped_var = self.linear_mapping_variable(var, self.variable_ranges[i])
             fem_space_variable_array.append(mapped_var)
 
-        original_dir:Path = self.root_folder.absolute()
+        original_dir:Path = self.root_folder.resolve().absolute()
         dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
         print('######################################################\n')
         print(dir_name)
@@ -193,7 +193,7 @@ class AbstractPhysicalModel(ABC):
         # make problem id back to original, since it has been updated when generate_input_deck has been called
 
 
-        original_dir:Path = self.root_folder.absolute()
+        original_dir:Path = self.root_folder.resolve().absolute()
         dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
         working_dir = original_dir.joinpath(dir_name)
         input_file_path = working_dir.joinpath(self.input_file_name)
@@ -201,14 +201,14 @@ class AbstractPhysicalModel(ABC):
         if runStarter:
             # This is just one bypass in order to avoid setting MP settings
             # for just the mass computation
-            run_OpenRadioss(input_file_path.absolute().as_posix(), 
+            run_OpenRadioss(input_file_path.resolve().absolute(), 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=False,
                         np_int=1,
                         nt_int=1)
         else:
-            run_OpenRadioss(input_file_path.absolute().as_posix(), 
+            run_OpenRadioss(input_file_path.resolve().absolute(), 
                         self.batch_file_path, 
                         runStarter=runStarter,
                         write_vtk=bool(self._runner_options.write_vtk),
@@ -219,7 +219,7 @@ class AbstractPhysicalModel(ABC):
                                deck_id:int):
         
         dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
-        original_dir:Path = self.root_folder.absolute()    
+        original_dir:Path = self.root_folder.resolve().absolute()    
         working_dir = original_dir.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
         output_file_path = working_dir.joinpath(self.output_file_name)
@@ -231,7 +231,7 @@ class AbstractPhysicalModel(ABC):
                                deck_id:int)->float:
 
         dir_name = f'{self.__class__.__name__.lower()}_deck{deck_id}'
-        original_dir:Path = self.root_folder.absolute()
+        original_dir:Path = self.root_folder.resolve().absolute()
         working_dir = original_dir.joinpath(dir_name)
         # load simulation result dataframe and make it cleaner
         starter_out_file_path = working_dir.joinpath(self.starter_out_file_name)

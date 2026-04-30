@@ -41,7 +41,7 @@ def _get_download_info():
     if _SYSTEM == 'Windows':
         return (
             "https://github.com/OpenRadioss/OpenRadioss/releases/download/latest-20260319/OpenRadioss_win64.zip",
-            "windows"
+            "win"
         )
     elif _SYSTEM == 'Linux':
         return (
