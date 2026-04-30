@@ -21,6 +21,7 @@ __pycache__/
 
 # OpenRadioss directory
 *OpenRadioss_linux64/OpenRadioss*
+*OpenRadioss_win64/OpenRadioss*
 *OpenRadioss/*
 
 
