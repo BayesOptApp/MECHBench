@@ -1,0 +1,390 @@
+ ThreePointBending_0001.out
+************************************************************************
+**                                                                    **
+**                                                                    **
+**                         OpenRadioss Engine                         **
+**                                                                    **
+**            Non-linear Finite Element Analysis Software             **
+**                                                                    **
+**                                                                    **
+**                                                                    **
+**                  Windows 64 bits, Intel compiler                   **
+**                      Double Precision Version                      **
+**                                                                    **
+**                                                                    **
+**                                                                    **
+************************************************************************
+** OpenRadioss Software                                               **
+** COPYRIGHT (C) 1986-2026 Altair Engineering, Inc.                   **
+** Licensed under GNU Affero General Public License.                  **
+** See License file.                                                  **
+************************************************************************
+ 
+ NUMBER OF SPMD DOMAINS           1
+ NUMBER OF THREADS PER DOMAIN     8
+ NUMBER OF HMPP PROCESSES         8
+  
+ COMPUTATION HARDWARE DESCRIPTION
+  
+ HOSTNAME     CPU TYPE, FREQUENCY AND MEMORY
+ vinicius   13th Gen Intel(R) Core(TM) i7-13700 (x86_64), 2100 MHz,   4966 MB RAM,  50888 MB swap
+  
+ STACKSIZE  . . . . . . . . . . . . . . . . . . . . 1430 MB
+ THREAD STACKSIZE . . . . . . . . . . . . . . . . . 400 MB
+ 
+************************************************************************
+
+
+ ThreePointBendingD01                                                            
+
+
+ FINAL TIME . . . . . . . . . . . . . . . . . . .  0.3000000E-01
+
+ TIME INTERVAL FOR TIME HISTORY PLOTS . . . . . .   0.000000    
+
+ TIME STEP SCALE FACTOR . . . . . . . . . . . . .  0.9000000    
+
+ MINIMUM TIME STEP  . . . . . . . . . . . . . . .   0.000000    
+
+
+ BRICK TIME STEP SCALE FACTOR . . . . . . . . . .  0.9000000    
+ BRICK MINIMUM TIME STEP. . . . . . . . . . . . .   0.000000    
+ MIN. TIME STEP FLAG (1:STOP RUN, 2:DELETE BRICK)     1
+
+ QUAD TIME STEP SCALE FACTOR. . . . . . . . . . .  0.9000000    
+ QUAD MINIMUM TIME STEP . . . . . . . . . . . . .   0.000000    
+ MIN. TIME STEP FLAG (1:STOP RUN, 2:DELETE QUAD).     1
+
+ SHELL TIME STEP SCALE FACTOR . . . . . . . . . .  0.9000000    
+ SHELL MINIMUM TIME STEP. . . . . . . . . . . . .   0.000000    
+ MIN. TIME FLAG (1:STOP, 2:DELETE, 3:SMALL STRAIN)    2
+
+ TRUSS TIME STEP SCALE FACTOR . . . . . . . . . .  0.9000000    
+ TRUSS MINIMUM TIME STEP. . . . . . . . . . . . .   0.000000    
+ MIN. TIME FLAG (1:STOP, 2:DELETE). . . . . . . .     0
+
+ BEAM TIME STEP SCALE FACTOR. . . . . . . . . . .  0.9000000    
+ BEAM MINIMUM TIME STEP . . . . . . . . . . . . .   0.000000    
+ MIN. TIME FLAG (1:STOP, 2:DELETE). . . . . . . .     0
+
+ SPRING TIME STEP SCALE FACTOR. . . . . . . . . .  0.9000000    
+ SPRING MINIMUM TIME STEP . . . . . . . . . . . .   0.000000    
+ MIN. TIME FLAG (1:STOP, 2:DELETE). . . . . . . .     0
+
+ AIRBAG TIME STEP SCALE FACTOR. . . . . . . . . .  0.9000000    
+ AIRBAG MINIMUM TIME STEP . . . . . . . . . . . .   0.000000    
+ MIN. TIME FLAG (1:STOP). . . . . . . . . . . . .     0
+
+ CONTACT TIME STEP SCALE FACTOR . . . . . . . . .  0.9000000    
+ CONTACT MINIMUM TIME STEP. . . . . . . . . . . .   0.000000    
+ MIN. TIME FLAG(1:STOP, 2:REMOVE NODE FROM INTERF)    0
+
+ PRINTOUT CYCLE FREQUENCY . . . . . . . . . . . .  -500
+
+ RESTART CYCLE FREQUENCY. . . . . . . . . . . . .   10000000
+
+ MAXIMUM RESTART WRITE BEFORE OVERWRITE . . . . .     0
+
+ INVERS: INPUT DECK VERSION . . . . . . . . . . .   101
+ ITTYP : FLAG FOR TYPE OF T-FILE. . . . . . . . .     4
+
+ INITIAL TIME STEP. . . . . . . . . . . . . . . .   0.000000    
+ MAXIMUM TIME STEP. . . . . . . . . . . . . . . .  0.1000000E+21
+
+ PARALLEL ARITHMETIC ON
+ NUMBER OF INTERFACES TO BE ELIMINATED. . . . . .        0
+
+ NUMBER OF PARTS TO BE ELIMINATED . . . . . . . .        0
+
+ NUMBER OF SOLID  ELEMENT BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF QUAD   ELEMENT BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF SHELL  ELEMENT BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF TRUSS  ELEMENT BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF BEAM   ELEMENT BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF SPRING ELEMENT BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF SH_3N  ELEMENT BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF  SPH PARTICLES BLOCKS TO BE ELIMINATED        0
+
+ NUMBER OF RIGID LINKS. . . . . . . . . . . . . .        0
+
+ NUMBER OF NEW BOUNDARY CONDITIONS. . . . . . . .        0
+
+
+ TIME FOR FIRST ANIMATION-FILE PLOT . . . . . . .   0.000000    
+ TIME INTERVAL FOR ANIMATION-FILE PLOTS . . . . .  0.3000000E-03
+ TIME TO STOP ANIMATION-FILE PLOTS. . . . . . . .  0.1000000E+21
+ SENSOR FOR ANIMATION-FILE PLOTS. . . . . . . . .          0
+ TIME INTERVAL FOR SENSOR ANIMATION-FILE PLOTS. .   0.000000    
+
+ VARIABLE SAVED ON ANIMATION FILES (1: YES) :
+      PLASTIC STRAIN. . . . . .     1
+      DENSITY     (SOLID ONLY).     0
+      SPECIFIC ENERGY . . . . .     0
+      HOURGLASS ENERGY. . . . .     0
+      TEMPERATURE (SOLID ONLY).     0
+      THICKNESS   (SHELL ONLY).     1
+      PRESSURE    (SOLID ONLY).     0
+      VON MISES . . . . . . . .     1
+      TURBULENT ENERGY (FLUID).     0
+      TURBULENT VISCOSITY(FLUID)    0
+      VORTICITY (FLUID) . . . .     0
+ NODAL VALUES SAVED ON ANIMATION FILES (1: YES) :
+      PRESSURE. . . . . . . . .     0
+      DENSITY . . . . . . . . .     0
+      TEMPERATURE . . . . . . .     0
+ VECTOR SAVED ON ANIMATION FILES (1: YES) :
+      VELOCITY VECTOR . . . . .     1
+      DISPLACEMENT VECTOR . . .     1
+      ACCELERATION VECTOR . . .     0
+      CONTACT FORCES. . . . . .     0
+      INTERNAL FORCES . . . . .     0
+      EXTERNAL FORCES . . . . .     0
+      SECTION RBY RWALL FORCES.     0
+      ROTATIONAL VELOCITY VECTOR    0
+      CONTACT PRESSURE (VECTORS)    0
+ SHELL TENSOR SAVED ON ANIMATION FILES (1: YES) :
+      MEMBRANE STRESS . . . . .     0
+      BENDING STRESS(MOMENT/T^2)    0
+      UPPER LAYER STRESS. . . .     0
+      LOWER LAYER STRESS. . . .     0
+      MEMBRANE STRAIN . . . . .     0
+      CURVATURE . . . . . . . .     0
+      UPPER LAYER STRAIN. . . .     0
+      LOWER LAYER STRAIN. . . .     0
+ NODAL MASS SAVED ON ANIMATION FILES (1: YES) :    0
+ KEEP DELETED ELEMENT (1: YES) :    0
+
+
+ 
+ CHECKSUM DIGESTS
+ ----------------
+ 
+ 
+ 01/05/2026
+   CYCLE    TIME      TIME-STEP  ELEMENT          ERROR  I-ENERGY    K-ENERGY T  K-ENERGY R  EXT-WORK     MAS.ERR     TOTAL MASS  MASS ADDED
+       0   0.000      0.1470E-05 SHELL       3103   0.0%   0.000      0.4300E+07   0.000       0.000       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA001 WRITTEN
+     ANIMATION FILE: ThreePointBendingA002 WRITTEN
+     ANIMATION FILE: ThreePointBendingA003 WRITTEN
+     500  0.7287E-03  0.1445E-05 NODE     1007257   0.0%  0.2327E+06  0.4067E+07   43.85      -373.2       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA004 WRITTEN
+     ANIMATION FILE: ThreePointBendingA005 WRITTEN
+    1000  0.1440E-02  0.1406E-05 NODE     1007099   0.0%  0.7706E+06  0.3530E+07   40.72      -407.9       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA006 WRITTEN
+     ANIMATION FILE: ThreePointBendingA007 WRITTEN
+     ANIMATION FILE: ThreePointBendingA008 WRITTEN
+    1500  0.2142E-02  0.1397E-05 NODE     1007099   0.0%  0.1319E+07  0.2982E+07   32.32      -366.7       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA009 WRITTEN
+     ANIMATION FILE: ThreePointBendingA010 WRITTEN
+    2000  0.2839E-02  0.1390E-05 NODE     1007099   0.0%  0.1831E+07  0.2470E+07   42.49      -320.2       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA011 WRITTEN
+     ANIMATION FILE: ThreePointBendingA012 WRITTEN
+    2500  0.3530E-02  0.1378E-05 NODE     1007099   0.0%  0.2304E+07  0.1997E+07   42.93      -269.1       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA013 WRITTEN
+     ANIMATION FILE: ThreePointBendingA014 WRITTEN
+     ANIMATION FILE: ThreePointBendingA015 WRITTEN
+    3000  0.4216E-02  0.1367E-05 NODE     1007099   0.0%  0.2731E+07  0.1570E+07   39.35      -219.2       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA016 WRITTEN
+     ANIMATION FILE: ThreePointBendingA017 WRITTEN
+    3500  0.4898E-02  0.1357E-05 NODE     1007336   0.0%  0.3107E+07  0.1194E+07   40.85      -168.9       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA018 WRITTEN
+     ANIMATION FILE: ThreePointBendingA019 WRITTEN
+    4000  0.5573E-02  0.1349E-05 NODE     1007257   0.0%  0.3434E+07  0.8668E+06   35.44      -116.5       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA020 WRITTEN
+     ANIMATION FILE: ThreePointBendingA021 WRITTEN
+    4500  0.6248E-02  0.1350E-05 NODE     1007257   0.0%  0.3719E+07  0.5825E+06   47.45      -61.99       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA022 WRITTEN
+     ANIMATION FILE: ThreePointBendingA023 WRITTEN
+     ANIMATION FILE: ThreePointBendingA024 WRITTEN
+    5000  0.6923E-02  0.1350E-05 NODE     1007257   0.0%  0.3951E+07  0.3501E+06   35.69      -4.186       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA025 WRITTEN
+     ANIMATION FILE: ThreePointBendingA026 WRITTEN
+    5500  0.7598E-02  0.1350E-05 NODE     1007257   0.0%  0.4127E+07  0.1749E+06   32.85       55.82       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA027 WRITTEN
+     ANIMATION FILE: ThreePointBendingA028 WRITTEN
+    6000  0.8273E-02  0.1350E-05 NODE     1007257   0.0%  0.4242E+07  0.5920E+05   43.45       115.9       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA029 WRITTEN
+     ANIMATION FILE: ThreePointBendingA030 WRITTEN
+    6500  0.8947E-02  0.1350E-05 NODE     1007257   0.0%  0.4297E+07   4601.       29.34       176.5       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA031 WRITTEN
+     ANIMATION FILE: ThreePointBendingA032 WRITTEN
+     ANIMATION FILE: ThreePointBendingA033 WRITTEN
+    7000  0.9622E-02  0.1350E-05 NODE     1007257   0.0%  0.4290E+07  0.1138E+05   34.48       236.6       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA034 WRITTEN
+     ANIMATION FILE: ThreePointBendingA035 WRITTEN
+    7500  0.1030E-01  0.1350E-05 NODE     1007257   0.0%  0.4232E+07  0.6911E+05   31.11       284.9       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA036 WRITTEN
+     ANIMATION FILE: ThreePointBendingA037 WRITTEN
+    8000  0.1097E-01  0.1350E-05 NODE     1007257   0.0%  0.4161E+07  0.1409E+06   31.80       310.2       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA038 WRITTEN
+     ANIMATION FILE: ThreePointBendingA039 WRITTEN
+    8500  0.1165E-01  0.1350E-05 NODE     1007257   0.0%  0.4120E+07  0.1818E+06   36.64       306.7       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA040 WRITTEN
+     ANIMATION FILE: ThreePointBendingA041 WRITTEN
+     ANIMATION FILE: ThreePointBendingA042 WRITTEN
+    9000  0.1232E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1823E+06   31.31       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA043 WRITTEN
+     ANIMATION FILE: ThreePointBendingA044 WRITTEN
+    9500  0.1300E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1824E+06   30.40       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA045 WRITTEN
+     ANIMATION FILE: ThreePointBendingA046 WRITTEN
+   10000  0.1367E-01  0.1351E-05 NODE     1007257   0.0%  0.4119E+07  0.1824E+06   28.15       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA047 WRITTEN
+     ANIMATION FILE: ThreePointBendingA048 WRITTEN
+   10500  0.1435E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1825E+06   26.42       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA049 WRITTEN
+     ANIMATION FILE: ThreePointBendingA050 WRITTEN
+     ANIMATION FILE: ThreePointBendingA051 WRITTEN
+   11000  0.1502E-01  0.1351E-05 NODE     1007257   0.0%  0.4119E+07  0.1826E+06   38.32       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA052 WRITTEN
+     ANIMATION FILE: ThreePointBendingA053 WRITTEN
+   11500  0.1570E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1826E+06   29.62       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA054 WRITTEN
+     ANIMATION FILE: ThreePointBendingA055 WRITTEN
+   12000  0.1637E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1827E+06   28.60       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA056 WRITTEN
+     ANIMATION FILE: ThreePointBendingA057 WRITTEN
+   12500  0.1705E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1828E+06   37.27       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA058 WRITTEN
+     ANIMATION FILE: ThreePointBendingA059 WRITTEN
+     ANIMATION FILE: ThreePointBendingA060 WRITTEN
+   13000  0.1772E-01  0.1351E-05 NODE     1007257   0.0%  0.4119E+07  0.1828E+06   34.91       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA061 WRITTEN
+     ANIMATION FILE: ThreePointBendingA062 WRITTEN
+   13500  0.1840E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1829E+06   33.02       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA063 WRITTEN
+     ANIMATION FILE: ThreePointBendingA064 WRITTEN
+   14000  0.1907E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1830E+06   30.47       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA065 WRITTEN
+     ANIMATION FILE: ThreePointBendingA066 WRITTEN
+   14500  0.1975E-01  0.1350E-05 NODE     1007257   0.0%  0.4119E+07  0.1831E+06   31.99       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA067 WRITTEN
+     ANIMATION FILE: ThreePointBendingA068 WRITTEN
+     ANIMATION FILE: ThreePointBendingA069 WRITTEN
+   15000  0.2043E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1831E+06   34.23       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA070 WRITTEN
+     ANIMATION FILE: ThreePointBendingA071 WRITTEN
+   15500  0.2110E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1832E+06   29.64       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA072 WRITTEN
+     ANIMATION FILE: ThreePointBendingA073 WRITTEN
+   16000  0.2178E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1832E+06   26.59       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA074 WRITTEN
+     ANIMATION FILE: ThreePointBendingA075 WRITTEN
+   16500  0.2245E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1833E+06   31.46       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA076 WRITTEN
+     ANIMATION FILE: ThreePointBendingA077 WRITTEN
+     ANIMATION FILE: ThreePointBendingA078 WRITTEN
+   17000  0.2313E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1833E+06   38.88       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA079 WRITTEN
+     ANIMATION FILE: ThreePointBendingA080 WRITTEN
+   17500  0.2380E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1834E+06   33.49       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA081 WRITTEN
+     ANIMATION FILE: ThreePointBendingA082 WRITTEN
+   18000  0.2448E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1834E+06   30.73       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA083 WRITTEN
+     ANIMATION FILE: ThreePointBendingA084 WRITTEN
+   18500  0.2515E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1834E+06   34.20       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA085 WRITTEN
+     ANIMATION FILE: ThreePointBendingA086 WRITTEN
+     ANIMATION FILE: ThreePointBendingA087 WRITTEN
+   19000  0.2583E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1835E+06   35.34       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA088 WRITTEN
+     ANIMATION FILE: ThreePointBendingA089 WRITTEN
+   19500  0.2650E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1835E+06   30.97       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA090 WRITTEN
+     ANIMATION FILE: ThreePointBendingA091 WRITTEN
+   20000  0.2718E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1835E+06   34.18       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA092 WRITTEN
+     ANIMATION FILE: ThreePointBendingA093 WRITTEN
+   20500  0.2785E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1836E+06   34.40       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA094 WRITTEN
+     ANIMATION FILE: ThreePointBendingA095 WRITTEN
+     ANIMATION FILE: ThreePointBendingA096 WRITTEN
+   21000  0.2853E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1836E+06   42.24       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA097 WRITTEN
+     ANIMATION FILE: ThreePointBendingA098 WRITTEN
+   21500  0.2920E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1836E+06   48.66       306.0       0.000      0.8961E-01   0.000    
+     ANIMATION FILE: ThreePointBendingA099 WRITTEN
+     ANIMATION FILE: ThreePointBendingA100 WRITTEN
+   22000  0.2988E-01  0.1350E-05 NODE     1007257   0.0%  0.4118E+07  0.1836E+06   37.60       306.0       0.000      0.8961E-01   0.000    
+
+     RESTART FILES: ThreePointBending_0001_[0001-0001].rst WRITTEN
+     -------------
+
+     ANIMATION FILE: ThreePointBendingA101 WRITTEN
+  
+                           ** CPU USER TIME **
+  
+  
+                        ** SUMMARY **
+  
+ #PROC  CONTSORT  CONTFOR   ELEMENT   KINCOND   INTEG     IO        T0        ASM       RESOL    
+   1   .1497E+02 .2014E+02 .9044E+02 .4234E+01 .1395E+02 .2370E+02 .1547E+01 .1111E+02 .1854E+03
+  
+ 
+                   ** CUMULATIVE CPU TIME SUMMARY **
+  
+ CONTACT SORTING.............: .1497E+02     8.07 % 
+ CONTACT FORCES..............: .2014E+02    10.86 % 
+ .. INCLUDING CONTACT NORMALS: .1420E+02     7.66 % 
+ ELEMENT FORCES..............: .9044E+02    48.79 % 
+ KINEMATIC COND..............: .4234E+01     2.28 % 
+ INTEGRATION.................: .1395E+02     7.53 % 
+ ASSEMBLING..................: .1111E+02     5.99 % 
+ OTHERS (including I/O)......: .3053E+02    16.47 % 
+ TOTAL.......................: .1854E+03   100.00 % 
+  
+  
+                           ** ELAPSED TIME **
+  
+  
+                        ** SUMMARY **
+  
+ #PROC  CONTSORT  CONTFOR   ELEMENT   KINCOND   INTEG     IO        T0        ASM       RESOL    
+   1   .1842E+01 .2584E+01 .1129E+02 .4411E+00 .1746E+01 .3073E+01 .2862E+00 .1300E+01 .2333E+02
+  
+                   ** MEMORY USAGE STATISTICS **
+  
+ TOTAL MEMORY USED .........................:       94 MB
+ MAXIMUM MEMORY PER PROCESSOR...............:       94 MB
+ MINIMUM MEMORY PER PROCESSOR...............:       94 MB
+ AVERAGE MEMORY PER PROCESSOR...............:       94 MB
+  
+                   ** DISK USAGE STATISTICS **
+  
+ TOTAL DISK SPACE USED .....................:        112 MB
+ ANIMATION/H3D/TH/OUTP SIZE ................:         95 MB
+ RESTART FILE SIZE .........................:         17 MB
+  
+                   ** COMPUTE TIME INFORMATION **
+                        ** CURRENT ENGINE **
+  
+ EXECUTION STARTED .........................:      2026/05/01  09:45:23
+ EXECUTION COMPLETED .......................:      2026/05/01  09:45:46
+  
+ ELAPSED TIME     =         23.38 s
+                          0:00:23
+
+
+
+     NORMAL TERMINATION      
+
+
+
+     TOTAL NUMBER OF CYCLES  :   22092
+
+  
+                   ** COMPUTE RUNTIME INFORMATION SUMMARY **
+  
+        STARTER RUNTIME =          0.52s (00:00:00)
+ # 001   ENGINE RUNTIME =         23.38s (00:00:23)
+ ------------------------------ 
+ STARTER+ENGINE RUNTIME =         23.90s (00:00:23)
+  

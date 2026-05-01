@@ -340,11 +340,13 @@ class Crashtube_GMSH(Template_GMSH_Mesh_Constructor):
             # Match the heights to the vector of internal points
             idxs = np.where(np.isclose(mid1, unique_points))[0], np.where(np.isclose(mid2, unique_points))[0]
 
+            idxs = np.asarray(idxs).ravel().astype(int).tolist()
+
             # Get the exact points to change
             mod_points_f1 = []
             mod_points_f3 = []
 
-            for jj in np.arange(int(idxs[0]),int(idxs[1]+1),1,dtype=int):
+            for jj in range(int(idxs[0]), int(idxs[1]) + 1):
                 #FACE 1
                 mod_points_f1.extend(layersPointsID[jj][1:3])
                 mod_points_f3.extend(layersPointsID[jj][7:9])
@@ -376,11 +378,13 @@ class Crashtube_GMSH(Template_GMSH_Mesh_Constructor):
             # Match the heights to the vector of internal points
             idxs = np.where(np.isclose(mid1, unique_points))[0], np.where(np.isclose(mid2, unique_points))[0]
 
+            idxs = np.asarray(idxs).ravel().astype(int).tolist()
+
             # Get the exact points to change
             mod_points_f2 = []
             mod_points_f4 = []
 
-            for jj in np.arange(int(idxs[0]),int(idxs[1]+1),1,dtype=int):
+            for jj in range(int(idxs[0]), int(idxs[1]) + 1):
                 #FACE 1
                 mod_points_f2.extend(layersPointsID[jj][4:6])
                 mod_points_f4.extend(layersPointsID[jj][10:12])

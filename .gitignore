@@ -21,14 +21,16 @@ __pycache__/
 
 # OpenRadioss directory
 *OpenRadioss_linux64/OpenRadioss*
+*OpenRadioss_win64/OpenRadioss*
 *OpenRadioss/*
 
 
 # More Radioss DATA files
 *ThreePointBendingA*
 *ThreePointBendingT*
-*combineT
+*combineT*
 *combineA*
+*combine_*
 
 # (Optional) keep specific text files:
 # !README.txt
