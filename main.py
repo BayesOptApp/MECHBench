@@ -17,7 +17,7 @@ Added the following block to identify if the current system
 #}   
 
 runnerOptions = {"np":1, # Number of processes to run the simulation
-                 "nt":8,
+                 "nt":4,
                  "h_level":1,
                  "gmsh_verbosity":0,
                  "write_vtk":True,
@@ -30,11 +30,11 @@ the model is determined (mesh and fem data loaded) only when the variable array 
 
 
 def main():
-    sim_id = 238 # Attribute to define the simulation id and connected results folder name
-    dim = 5#vector = [np.zeros((20,)).tolist()] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-    problem_id = 2 # 1: star box, 2: three point bending, 3: crash tube
+    sim_id = 241 # Attribute to define the simulation id and connected results folder name
+    dim = 15#vector = [np.zeros((20,)).tolist()] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
+    problem_id = 3 # 1: star box, 2: three point bending, 3: crash tube
 
-    vector = np.random.uniform(0,0,(dim,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
+    vector = np.random.uniform(-5,5,(dim,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
     print(f"Evaluating vector: {vector}")
     f = sob.get_problem(problem_id,dim, runner_options=runnerOptions)
     obj_value = f(vector,sim_id)
