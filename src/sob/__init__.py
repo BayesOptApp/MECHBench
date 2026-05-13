@@ -4,6 +4,8 @@ from src.sob.physical_models.threePointBending import ThreePointBending
 from src.sob.physical_models.crashTube import CrashTube
 from typing import Optional, Iterable, Union
 
+VERSION = "0.1.0"
+
 
 def default_runner_options():
     return {
