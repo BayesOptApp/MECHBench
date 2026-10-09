@@ -415,7 +415,7 @@ class AbstractPhysicalModel(ABC):
     
     @property
     def batch_file_path(self)->str:
-        return self._runner_options.open_radioss_main_path.as_posix()
+        return self._runner_options.main_path.as_posix()
     
     @property
     def output_data(self)->Union[List[str],str]:

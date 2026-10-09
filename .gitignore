@@ -24,6 +24,11 @@ __pycache__/
 *OpenRadioss_win64/OpenRadioss*
 *OpenRadioss/*
 
+# OpenCourant directory
+*OpenCourant_linux64/OpenCourant*
+*OpenCourant_win64/OpenCourant*
+*OpenCourant/*
+
 
 # More Radioss DATA files
 *ThreePointBendingA*

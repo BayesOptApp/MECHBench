@@ -21,7 +21,10 @@ import src.sob.physical_models.utils.platform_det as platform_det
 
 @dataclass
 class RunnerOptions:
-    open_radioss_main_path: Optional[Path] = None
+    # 09-10-2026: Changed the syntax to accomodate the idea that the user might want to use
+    #             OpenCourant and the new updates instead of OpenRadioss.
+
+    main_path: Optional[Path] = None
 
     write_vtk: int = 0
     h_level: int = 1
@@ -32,7 +35,7 @@ class RunnerOptions:
 
     def __post_init__(self):
         self._validate()
-        self._setup_openradioss_path()
+        self._setup_main_path()
 
     # ---------------------------
     # Validation
@@ -53,33 +56,35 @@ class RunnerOptions:
     # ---------------------------
     # Path setup
     # ---------------------------
-    def _setup_openradioss_path(self):
+    def _setup_main_path(self):
         system = platform_det.platform_detection()
 
-        if self.open_radioss_main_path is None:
+        ##### NOTE: The following code is added since SIEMENS stopped the open distribution of OpenRadioss. 
+        ##### The code will download the fork called OpenCourant
+        if self.main_path is None:
             platform_det.raise_if_not_allowed_platform()
 
             folder_map = {
-                "Linux": "OpenRadioss_linux64",
-                "Windows": "OpenRadioss_win64",
+                "Linux": "OpenCourant_linux64",
+                "Windows": "OpenCourant_win64",
             }
 
-            base_path = Path.cwd() / folder_map[system] / "OpenRadioss"
+            base_path = Path.cwd() / folder_map[system] / "OpenCourant"
 
             if not base_path.exists():
-                print(f"OpenRadioss not found at {base_path}. Downloading...")
-                platform_det.download_zip_openradioss()
+                print(f"OpenCourant not found at {base_path}. Downloading...")
+                platform_det.download_zip_opencourant()
 
-            self.open_radioss_main_path = base_path.resolve()
+            self.main_path = base_path.resolve()
 
         else:
-            self.open_radioss_main_path = Path(
-                self.open_radioss_main_path
+            self.main_path = Path(
+                self.main_path
             ).resolve()
 
-            if not self.open_radioss_main_path.exists():
+            if not self.main_path.exists():
                 raise ValueError(
-                    f"Path does not exist: {self.open_radioss_main_path}"
+                    f"Path does not exist: {self.main_path}"
                 )
 
     # ---------------------------
