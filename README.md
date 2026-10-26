@@ -197,21 +197,31 @@ f = sob.get_problem(problem_id, dim, runner_options=runnerOptions)
 | `h_level`                             | int  | 1       | Mesh refinement level. Higher values increase resolution (and cost).   |
 | `gmsh_verbosity`                      | int  | 0       | Controls GMSH output verbosity (0 = silent).                           |
 | `write_vtk`                           | bool | False   | If `True`, exports simulation results in VTK format for visualization. |
-| `open_radioss_main_path` *(optional)* | str  | None    | Path to a local OpenRadioss installation.                              |
+| `main_path` *(optional)*              | str  | None    | `"docker"` or `"podman"` to run the solver in a container, or a path to a local OpenRadioss/OpenCourant installation. |
 
 ##### Automatic OpenRadioss Handling
 You do not need to manually install OpenRadioss.
 
-If `open_radioss_main_path` is not provided, MECHBench will:
+If `main_path` is not provided, MECHBench will:
 
 1. Check if OpenRadioss binaries are available locally
 2. If not found, automatically download the appropriate binaries
+
+##### Using Docker or Podman
+Instead of a local installation, set `main_path` to `"docker"` or `"podman"` to run the solver in a container (the container engine must be installed and running):
+```python
+runnerOptions = {
+    "main_path": "docker",  # or "podman"
+    "np": 4,
+    "nt": 1,
+}
+```
 
 ##### Advanced: Custom OpenRadioss Path
 For full control over the solver (e.g., custom builds or HPC environments):
 ```python
 runnerOptions = {
-    "open_radioss_main_path": "/path/to/OpenRadioss/",
+    "main_path": "/path/to/OpenRadioss/",
     "np": 4,
     "nt": 2,
 }
