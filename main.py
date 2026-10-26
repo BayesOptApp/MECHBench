@@ -16,12 +16,13 @@ Added the following block to identify if the current system
 #                 "gmsh_verbosity":0,
 #}   
 
-runnerOptions = {"np":1, # Number of processes to run the simulation
-                 "nt":4,
+runnerOptions = {"np":4, # Number of processes to run the simulation
+                 "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
                  "write_vtk":True,
-                 "open_radioss_main_path":r"C:/Users/iolar/Downloads/OpenCourant_win64/OpenCourant"
+                 "main_path":"docker", # "docker" or "podman" to use the default docker image, or a path to the OpenCourant executable
+                 #"main_path":r"C:/Users/iolar/Downloads/OpenCourant_win64/OpenCourant",
 }
 
 r'''
@@ -31,12 +32,14 @@ the model is determined (mesh and fem data loaded) only when the variable array 
 
 
 def main():
-    sim_id = 10012 # Attribute to define the simulation id and connected results folder name
+    sim_id = 10019 # Attribute to define the simulation id and connected results folder name
     dim = 20#vector = [np.zeros((20,)).tolist()] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-    problem_id = 2 # 1: star box, 2: three point bending, 3: crash tube
+    problem_id = 3 # 1: star box, 2: three point bending, 3: crash tube
 
     #vector = np.random.uniform(-5,5,(dim,)).tolist()  # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-    vector = [2.820915, -2.820915, 2.820915, 2.820915, 2.820915, 2.820915, 2.820915, -2.820915, 2.820915, 2.820915, 2.820915, 2.820915, 2.820915, -2.820915, -2.820915, 2.820915, 2.820915, -2.820915, -2.820915, 2.820915]
+    vector = [2.820915, -2.820915, 2.820915, 2.820915, 2.820915, 2.820915, 2.820915, 
+              -2.820915, 2.820915, 2.820915, 2.820915, 2.820915, 2.820915, -2.820915, 
+              -2.820915, 2.820915, 2.820915, -2.820915, -2.820915, 2.820915]
     print(f"Evaluating vector: {vector}")
     f = sob.get_problem(problem_id,dim, runner_options=runnerOptions)
     obj_value = f(vector,sim_id)

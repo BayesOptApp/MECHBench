@@ -24,7 +24,7 @@ class RunnerOptions:
     # 09-10-2026: Changed the syntax to accomodate the idea that the user might want to use
     #             OpenCourant and the new updates instead of OpenRadioss.
 
-    main_path: Optional[Path] = None
+    main_path: Optional[Union[str, Path]] = None
 
     write_vtk: int = 0
     h_level: int = 1
@@ -53,6 +53,7 @@ class RunnerOptions:
         if self.gmsh_verbosity not in (0, 1):
             raise ValueError("gmsh_verbosity must be 0 or 1")
 
+
     # ---------------------------
     # Path setup
     # ---------------------------
@@ -78,14 +79,19 @@ class RunnerOptions:
             self.main_path = base_path.resolve()
 
         else:
-            self.main_path = Path(
-                self.main_path
-            ).resolve()
 
-            if not self.main_path.exists():
-                raise ValueError(
-                    f"Path does not exist: {self.main_path}"
-                )
+            # Check if the main path says docker or podman, if so, then we will use the default path for the docker image
+            if self.main_path in ("docker", "podman"):
+                self.main_path = self.main_path
+            else:
+                self.main_path = Path(
+                    self.main_path
+                ).resolve()
+
+                if not self.main_path.exists():
+                    raise ValueError(
+                        f"Path does not exist: {self.main_path}"
+                    )
 
     # ---------------------------
     # Helpers

@@ -415,7 +415,10 @@ class AbstractPhysicalModel(ABC):
     
     @property
     def batch_file_path(self)->str:
-        return self._runner_options.main_path.as_posix()
+        if self._runner_options.main_path in ("docker", "podman"):
+            return self._runner_options.main_path
+        else:
+            return self._runner_options.main_path.as_posix()
     
     @property
     def output_data(self)->Union[List[str],str]:

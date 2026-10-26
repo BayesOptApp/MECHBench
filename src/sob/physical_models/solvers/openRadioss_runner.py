@@ -1,203 +1,198 @@
-import subprocess
 import os
-import platform
+import shutil
+import subprocess
 from pathlib import Path
 from typing import Union
+
 from src.sob.physical_models.utils.run_openradioss import RunOpenRadioss
+from src.sob.physical_models.utils.run_openradioss_docker import (
+    RunOpenCourantDocker,
+)
 
 
-def run_OpenRadioss(input_file_path:Union[str,Path], 
-                batch_file_path:Union[str,Path], 
-                write_vtk:bool= True, 
-                write_csv:bool = True, 
-                runStarter:bool = False,
-                d3plot:bool=False,
-                nt_int:int = 1,
-                np_int:int = 1):
-    
-    # TODO: This is an input line to get the number ofcores available to run
-    
+def run_OpenRadioss(
+    input_file_path: Union[str, Path],
+    batch_file_path: Union[str, Path],
+    write_vtk: bool = True,
+    write_csv: bool = True,
+    runStarter: bool = False,
+    d3plot: bool = False,
+    nt_int: int = 1,
+    np_int: int = 1,
+):
+    """
+    Run OpenRadioss locally or OpenCourant through Docker/Podman.
 
-    nt = str(nt_int)
+    Parameters
+    ----------
+    input_file_path:
+        Path to the starter input deck, normally <jobname>_0000.rad.
 
-    # Get the directory of the folder storing the deck files
-    curdir = os.path.dirname(input_file_path)
+    batch_file_path:
+        Use "docker" or "podman" for the container backend.
+        Otherwise, provide the local OpenRadioss installation path.
 
-    np = str(np_int)
+    write_vtk:
+        Convert animation files to VTK after the engine runs.
 
-    #######
-    # ------------- WARNING ----------------------
-    # Simulations 
-    #######
-    sp = "dp"  # "sp" or any other value for non-sp 
+    write_csv:
+        Convert time-history files to CSV after the engine runs.
 
-    if write_vtk:
-        # "yes" or "no" depending on whether you want to convert Anim files to vtk (for ParaView)
-        vtk_option = "yes"  
-    else:
-        vtk_option = "no"
-    
-    if write_csv:
-        csv_option = "yes"  # "yes" or "no" depending on whether you want to convert TH files to csv
-    else:
-        csv_option = "no"
-    
-    if runStarter:
-        starter_option = "yes"  # "no" or "yes" depending on whether you are running the starter
-    else:
-        starter_option = "no"
+    runStarter:
+        If True, run only the starter.
 
-    if d3plot:
-        d3_plot_option = "yes"
-    else:
-        d3_plot_option = "no"
-    
+    d3plot:
+        Retained for compatibility with the original interface.
+
+    nt_int:
+        Number of OpenMP threads.
+
+    np_int:
+        Number of MPI processes.
+
+    Notes
+    -----
+    Existing results associated with the job are deleted before the run,
+    as in the original implementation.
+    """
+    input_file = Path(input_file_path).expanduser().resolve()
+
+    backend = (
+        os.fspath(batch_file_path)
+        if batch_file_path is not None
+        else None
+    )
+
+    container_backend = backend in ("docker", "podman")
+
     command = [
-        input_file_path, # %1
-        nt, # %2
-        np, # %3
-        sp, # %4
-        vtk_option, # %5
-        csv_option, # %6
-        starter_option, # %7,
-        d3_plot_option # TODO: This is for the 3d plot option which is not considered
+        str(input_file),
+        str(nt_int),
+        str(np_int),
+        "dp",
+        "yes" if write_vtk else "no",
+        "yes" if write_csv else "no",
+        "yes" if runStarter else "no",
+        "yes" if d3plot else "no",
     ]
 
+    if container_backend:
+        # Pass the application by name. The third positional parameter
+        # of RunOpenCourantDocker is the image name.
+        run_env = RunOpenCourantDocker(
+            command,
+            debug=0,
+            container_app=backend,
+        )
 
-    # Activate the OpenRadiossRunningEnvironment
+        if shutil.which(backend) is None:
+            raise FileNotFoundError(
+                f"Cannot find {backend!r} on the Python process PATH. "
+                "Check the installation or restart the IDE after "
+                "updating PATH."
+            )
+    else:
+        run_env = RunOpenRadioss(
+            command,
+            0,
+            backend,
+        )
 
-    run_env:RunOpenRadioss = RunOpenRadioss(command,
-                                            0,
-                                            batch_file_path) 
-    
-    # Clean the environment
+    if not input_file.is_file():
+        raise FileNotFoundError(
+            f"Input file not found: {input_file}"
+        )
+
+    if not Path(run_env.running_directory).is_dir():
+        raise FileNotFoundError(
+            f"Run directory not found: {run_env.running_directory}"
+        )
+
+    def execute(args, phase):
+        """Run a command and report its output if it fails."""
+
+
+        #print("Command:", repr(args))
+        #print("Working directory:", repr(run_env.running_directory))
+        #print("Directory exists:", os.path.isdir(run_env.running_directory))
+
+        #print("Docker in runner environment:", shutil.which(
+        #    "docker",
+        #    path=run_env.environment().get("PATH"),
+        #))
+        
+        if not isinstance(args, (list, tuple)) or not args:
+            raise TypeError(
+                f"{phase} command must be a nonempty list of arguments"
+            )
+
+        try:
+            result = subprocess.run(
+                args=args,
+                env=run_env.environment(),
+                cwd=run_env.running_directory,
+                shell=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"Could not start {phase}. "
+                f"Executable: {args[0]!r}; "
+                f"working directory: {run_env.running_directory!r}. "
+                "Check that both exist and the executable is on PATH."
+            ) from exc
+
+        if result.returncode != 0:
+            output = result.stdout.decode(
+                "utf-8",
+                errors="replace",
+            )
+
+            display_command = subprocess.list2cmdline(
+                list(map(str, args))
+            )
+
+            raise RuntimeError(
+                f"{phase} failed with exit code {result.returncode}.\n"
+                f"Command: {display_command}\n"
+                f"Output:\n{output}"
+            )
+
+        return result
+
+    # Match the original runner's cleanup behavior.
     run_env.delete_previous_results()
 
-    # Get run command
+    # Run the starter.
     starter_command = run_env.get_starter_command()
+    execute(starter_command, "Starter")
 
-    ##
-    #print("Running OpenRadioss with the following command:")
-    #print(" ".join(starter_command))
-    #print("Running in directory: ", run_env.running_directory)
-    ##
+    if runStarter:
+        return
 
-    # Run the starter
-    output_starter = subprocess.run(args=starter_command,env=run_env.environment(),
-                                    cwd=run_env.running_directory,
-                                    #shell=isShell, 
-                                    shell=False,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
-    
-    if output_starter.stderr is not None:
-        raise Exception("Starter not working: \n"+\
-                        output_starter.stderr)
+    # Run the engine decks in order.
+    engine_list = run_env.get_engine_input_file_list(repair=True)
 
-    # ======================================
-    # run the engine
-    # ======================================
-    if not runStarter:
-        # Get the files which are part of the engine
-        engine_list = run_env.get_engine_input_file_list(repair=True)
+    if not engine_list:
+        raise FileNotFoundError(
+            f"No engine input decks found for {run_env.jobname!r} "
+            f"in {run_env.running_directory}"
+        )
 
-        engine_stdout:list = []
+    for engine_file in engine_list:
+        engine_command = run_env.get_engine_command(
+            engine_file,
+            full_path=True,
+        )
+        execute(engine_command, f"Engine ({engine_file})")
 
-        for iFile in engine_list:
-            # Get the command
-            iCommand = run_env.get_engine_command(iFile,True)
+    # Convert time-history files when requested.
+    if write_csv:
+        for th_file in run_env.get_th_list():
+            run_env.convert_th_to_csv(th_file)
 
-            if platform.system() == 'Windows':
-                engine_stdout.append(subprocess.run(args=iCommand,
-                                        env=run_env.environment(),
-                                        cwd=run_env.running_directory,
-                                        #shell=isShell, 
-                                        shell = False,
-                                        start_new_session=True,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT))
-            else:
-                if np_int > 1:
-
-
-                    # Get default number environment variable
-                    envv = run_env.environment()
-                    envv["OMP_NUM_THREADS"] = str(nt_int)
-
-                    ##
-                    ##print("Running OpenRadioss with the following command:")
-                    ##print(" ".join(iCommand))
-                    print("Running in directory: ", run_env.running_directory)
-                    ##
-                    if "SLURM_JOB_ID" in os.environ:
-                        # If running in a SLURM environment, use srun
-                        engine_stdout.append(subprocess.run(args=iCommand,
-                                            cwd=run_env.running_directory,
-                                            env=envv,
-                                            #shell=isShell, 
-                                            shell = False,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT,
-                                            start_new_session=True))
-                    else:
-                        # If not running in a SLURM environment, use mpirun
-                        #engine_stdout.append(subprocess.run(args=iCommand,
-                        #                    cwd=run_env.running_directory,
-                        #                    env=envv,
-                        #                    shell=isShell, 
-                        #                    shell = False,
-                        #                    stdout=subprocess.PIPE,
-                        #                    stderr=subprocess.STDOUT,
-                        #                    start_new_session=True))
-                        engine_stdout.append(subprocess.run(args=iCommand,
-                                                cwd=run_env.running_directory,
-                                                #env=envv,
-                                                #shell=isShell, 
-                                                shell = False,
-                                                stdout=subprocess.PIPE,
-                                                stderr=subprocess.STDOUT,
-                                                start_new_session=True))
-                else:
-                    # Get default number environment variable
-                    envv = run_env.environment()
-                    envv["OMP_NUM_THREADS"] = str(nt_int)
-
-                    engine_stdout.append(subprocess.run(args=iCommand,
-                                            cwd=run_env.running_directory,
-                                            env=envv,
-                                            #shell=isShell, 
-                                            shell = False,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT,
-                                            start_new_session=True))
-            
-        # Check if the engine run was successful
-        for i_stdout in engine_stdout:
-            if i_stdout.returncode != 0:
-                raise Exception("Engine not working: \n"+\
-                                i_stdout.stdout.decode("utf-8"))
-
-
-
-
-        # ======================================
-        # Convert to TH
-        # ======================================
-
-        th_list = run_env.get_th_list()
-
-        for i_th_file in th_list:
-            run_env.convert_th_to_csv(i_th_file)
-
-        # ======================================
-        # Convert to VTK
-        # ======================================
-
-        if write_vtk:
-
-            vtk_list = run_env.get_animation_list()
-
-            for i_anim_file in vtk_list:
-                run_env.convert_anim_to_vtk(i_anim_file)
-        
-
+    # Convert animation files when requested.
+    if write_vtk:
+        for anim_file in run_env.get_animation_list():
+            run_env.convert_anim_to_vtk(anim_file)
