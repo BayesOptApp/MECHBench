@@ -12,7 +12,6 @@ import os, sys
 # Import argparse
 import argparse
 
-
 '''
 Added the following block to identify if the current system 
 '''
