@@ -8,21 +8,12 @@ import pandas as pd
 Added the following block to identify if the current system 
 '''
 
-#runnerOptions = {"open_radioss_main_path":"/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/",
-#                 "write_vtk":False,C:\Users\iolar\Documents\OpenRadioss\OpenRadioss
-#                 "np":4, # Number of processes to run the simulation
-#                 "nt":1,
-#                 "h_level":1,
-#                 "gmsh_verbosity":0,
-#}   
-
-runnerOptions = {"np":4, # Number of processes to run the simulation
+runnerOptions = {"np":1, # Number of processes to run the simulation
                  "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
                  "write_vtk":True,
                  "main_path":"docker", # "docker" or "podman" to use the default docker image, or a path to the OpenCourant executable
-                 #"main_path":r"C:/Users/iolar/Downloads/OpenCourant_win64/OpenCourant",
 }
 
 r'''

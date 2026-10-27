@@ -13,6 +13,8 @@ import time
 # Import the platform
 import platform
 
+from pathlib import Path
+
 # Import system libraries
 import os, sys
 
@@ -33,14 +35,15 @@ linux_system = not (platform.system() == 'Windows')
 
 if linux_system:
     #orss_main_path = "/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/"
-    orss_main_path = "/home/olarterodriguezi/OpenRadioss_linux64/OpenRadioss/"
+    main_path = "/home/olarterodriguezi/OpenRadioss_linux64/OpenRadioss/"
     
 else:
-    orss_main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
+    #main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
+    main_path = r"C:\Users\iolar\Documents\External_Optimization_Library\MECHBench\OpenCourant_win64\OpenCourant"
 
-runnerOptions = {"open_radioss_main_path":orss_main_path,
+runnerOptions = {"main_path":main_path,
                  "write_vtk":False,
-                 "np":32, # Number of processes to run the simulation
+                 "np":1, # Number of processes to run the simulation
                  "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
@@ -48,9 +51,9 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Parse arguments for the simulation.")
-    parser.add_argument("--orss_main_path", type=str, default=orss_main_path,
+    parser.add_argument("--main_path", type=str, default=main_path,
                         help="Path to the OpenRadioss main directory.")
-    parser.add_argument("--np", type=int, default=4,
+    parser.add_argument("--np", type=int, default=1,
                         help="Number of processes to run the simulation.")
     parser.add_argument("--nt", type=int, default=1,
                         help="Number of threads to use in the simulation.")
@@ -80,6 +83,12 @@ def parse_args() -> argparse.Namespace:
                         help="Maximum number of iterations for the optimizer. Default is 100.")
     parser.add_argument("--doe_mult", type=int, default=3,
                         help="Multiplicative factor for the Design of Experiments (DoE) size.")
+    parser.add_argument("--dump_folder", type=str, default=None,
+                            help="Optional folder to dump simulation results. If not provided, results will be saved in the current working directory.")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for reproducibility. Default is 42.")
+    parser.add_argument("--ioh_logger_folder", type=str, default=None,
+                        help="Optional folder to store IOH logger results. If not provided, results will be saved in the current working directory.")
 
     # Add more arguments as needed for your simulation
 
@@ -104,19 +113,27 @@ def parse_args() -> argparse.Namespace:
 if __name__ == '__main__':
     args = parse_args()
 
-    # Generate the scratchdata directory if it does not exist
-    scratchdata_dir = os.environ['TMPDIR'] # TMPDIR is automatically set to /scratchdata/${SLURM_JOB_USER}/${SLURM_JOB_ID}
-    scratchdata_dir = os.path.join(scratchdata_dir,f"problem_{args.problem_type}/{args.optimizer}/{args.dimension}/{args.run_id}")
+    # Check if the running platform is Linux and if the scratchdata directory exists, if not create it
+    if args.dump_folder is None:
+        if platform.system() == 'Linux':
+            scratchdata_dir = os.environ.get('TMPDIR', '/scratchdata')  # TMPDIR is automatically set to /scratchdata/${SLURM_JOB_USER}/${SLURM_JOB_ID}
+            scratchdata_dir = os.path.join(scratchdata_dir, f"problem_{args.problem_type}/{args.optimizer}/{args.dimension}/{args.run_id}")
+        elif platform.system() == 'Windows':
+            scratchdata_dir = os.path.join(os.getcwd(), f"scratchdata/problem_{args.problem_type}/{args.optimizer}/{args.dimension}/{args.run_id}/")  
+        else:
+            raise EnvironmentError("Unsupported operating system. Please use Linux or Windows.")
+    else:    
+        scratchdata_dir = os.path.join(args.dump_folder, f"scratchdata/problem_{args.problem_type}/{args.optimizer}/{args.dimension}/{args.run_id}/")
     
     if not os.path.exists(scratchdata_dir):
         os.makedirs(scratchdata_dir)
+    
     # Move the main directory to the scratchdata directory
     os.chdir(scratchdata_dir)  # Change to the directory where the results will be saved
-    #os.makedirs(f"/home/olarterodriguezi/MECHBench/results/optimization/MECHBENCH_problem_{args.problem_type}_{args.objective_function}/run_{args.run_id}_{args.optimizer}/ARF/", exist_ok=True)
-    #os.chdir(f"/home/olarterodriguezi/MECHBench/results/optimization/MECHBENCH_problem_{args.problem_type}_{args.objective_function}/run_{args.run_id}_{args.optimizer}/ARF/")  # Change to the directory where the results will be saved    
+
     # Update runnerOptions with parsed arguments
     runnerOptions.update({
-        "open_radioss_main_path": args.orss_main_path,
+        "main_path": args.main_path,
         "np": args.np,
         "nt": args.nt,
         "h_level": args.h_level,
@@ -128,15 +145,12 @@ if __name__ == '__main__':
     objective_function = args.objective_function
 
     # Get the problem instance
-    f = sob.get_problem(problem_type, args.dimension, runnerOptions, objective_function, sequential_id_numbering=False)
+    f = sob.get_problem(problem_type, args.dimension, objective_function, runner_options=runnerOptions)
 
     # DoE Size
     doe_size = args.doe_mult * args.dimension
 
-
     n_iter:int = 0
-
-    
 
     # Make a wrapper function
 
@@ -152,10 +166,20 @@ if __name__ == '__main__':
                                    instance=0,
                                    lb=-5.0,
                                    ub=5.0)
-    
+
+    if args.ioh_logger_folder is not None:
+        ioh_logger_folder = Path(args.ioh_logger_folder)
+
+        if not ioh_logger_folder.exists():
+            ioh_logger_folder.mkdir(parents=True, exist_ok=True)
+
+    else:
+        ioh_logger_folder = Path(__file__).parent.joinpath("logdata_optimization")  # Use the scratchdata directory if no logger folder is provided
+
+
     # Set up the logger
     logger = ioh.logger.Analyzer(
-        root="/home/olarterodriguezi/MECHBench/results/optimization",
+        root=ioh_logger_folder.resolve().as_posix(),
         triggers=[ioh.logger.trigger.ALWAYS],
         additional_properties=[ioh.logger.property.RAWYBEST], # Log the RAW_Y_BEST
         folder_name=f"MECHBENCH_problem_{problem_type}_{objective_function}/run_{args.run_id}_{args.optimizer}",
@@ -170,6 +194,7 @@ if __name__ == '__main__':
     optimizer = wrapopt(args.optimizer, ioh_problem, ml_total_budget=args.max_iter,
                         ml_dim=args.dimension, ml_DoE_size=doe_size, random_seed=args.run_id+42)
 
+
     # Run optimization
     optimizer.run()
 
@@ -178,13 +203,7 @@ if __name__ == '__main__':
 
     logger.close()
 
-    #start_time = time.perf_counter()
-    #obj_value = f(vector,sim_id)
-    #end_time = time.perf_counter()
-    
-    #print(f"Time taken: {end_time - start_time} seconds")
 
-    #print(obj_value)
     
 
     
