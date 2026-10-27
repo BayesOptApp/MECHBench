@@ -146,6 +146,14 @@ This will:
 2. Evaluate the objective function(s) by running OpenRadioss simulations.
 3. Store the results in the designated output folder.
 
+### Running on a SLURM cluster
+
+Example SLURM templates for optimization and sequential sample evaluations are
+available in [`SLURM_scripts/`](SLURM_scripts/). Before submission, update the
+cluster-specific resources, module names, environment and OpenRadioss paths,
+and experiment settings. See [`SLURM_scripts/README.md`](SLURM_scripts/README.md)
+for the editable fields and submission instructions.
+
 ### Problem Setup in `main.py`
 
 Below is a detailed walkthrough of the execution module `main.py`.
@@ -374,4 +382,3 @@ This behavior is inherent to the OpenRadioss binaries and not specific to MECHBe
 
 ## Other contributors
 - Feifan Li (feifan.li@tum.de)
-
