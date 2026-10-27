@@ -126,6 +126,8 @@ Create a new environment (recommended) and install required packages:
 ```bash
 pip install -r requirements.txt
 ```
+For optional optimizer dependencies such as HDBO, or ELA dependencies, see the
+[TELO submission environment guide](TELO_submission.md).
 
 
 ## Usage
