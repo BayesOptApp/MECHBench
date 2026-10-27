@@ -26,14 +26,15 @@ linux_system = not (platform.system() == 'Windows')
 
 if linux_system:
     #orss_main_path = "/home/ivanolar/Documents/OpenRadioss2/OpenRadioss_linux64/OpenRadioss/"
-    orss_main_path = "/home/olarterodriguezi/OpenRadioss_linux64/OpenRadioss/"
+    main_path = "/home/olarterodriguezi/OpenRadioss_linux64/OpenRadioss/"
     
 else:
-    orss_main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
+    #main_path = "C:/Users/iolar/Documents/OpenRadioss/OpenRadioss"
+    main_path = "docker"
 
-runnerOptions = {"open_radioss_main_path":orss_main_path,
+runnerOptions = {"main_path":main_path,
                  "write_vtk":False,
-                 "np":32, # Number of processes to run the simulation
+                 "np":1, # Number of processes to run the simulation
                  "nt":1,
                  "h_level":1,
                  "gmsh_verbosity":0,
@@ -41,9 +42,9 @@ runnerOptions = {"open_radioss_main_path":orss_main_path,
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Parse arguments for the simulation.")
-    parser.add_argument("--orss_main_path", type=str, default=orss_main_path,
+    parser.add_argument("--main_path", type=str, default=main_path,
                         help="Path to the OpenRadioss main directory.")
-    parser.add_argument("--np", type=int, default=8,
+    parser.add_argument("--np", type=int, default=1,
                         help="Number of processes to run the simulation.")
     parser.add_argument("--nt", type=int, default=1,
                         help="Number of threads to use in the simulation.")
@@ -66,6 +67,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--objective_function", type=str, default="load_uniformity",
                         help="Objective function to be used in the simulation. Default is 'load_uniformity'.")
 
+    parser.add_argument("--dump_folder", type=str, default=None,
+                        help="Optional folder to dump simulation results. If not provided, results will be saved in the current working directory.")
+
     # Add more arguments as needed for your simulation
 
 
@@ -78,7 +82,7 @@ def main():
     #os.chdir("/scratchdata/olarterodriguezi/") # Change to the directory where the results will be saved
     sim_id = 257 # Attribute to define the simulation id and connected results folder name
     vector = [2.5,-1] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-    f = sob.get_problem(3,2,runnerOptions,"intrusion",sequential_id_numbering=False)
+    f = sob.get_problem(3,2,runnerOptions,output_data="intrusion")
     # Start timing
     start_time = time.perf_counter()
     obj_value = f(vector,sim_id)
@@ -90,16 +94,28 @@ if __name__ == '__main__':
     args = parse_args()
 
     # Generate the scratchdata directory if it does not exist
-    scratchdata_dir = os.environ['TMPDIR'] # TMPDIR is automatically set to /scratchdata/${SLURM_JOB_USER}/${SLURM_JOB_ID}
-    scratchdata_dir = f"{scratchdata_dir}/problem_{args.problem_type}/{args.sim_id}/"
+
+    # Check if the running platform is Linux and if the scratchdata directory exists, if not create it
+    if args.dump_folder is None:
+        if platform.system() == 'Linux':
+            scratchdata_dir = os.environ.get('TMPDIR', '/scratchdata')  # TMPDIR is automatically set to /scratchdata/${SLURM_JOB_USER}/${SLURM_JOB_ID}
+            scratchdata_dir = os.path.join(scratchdata_dir, f"problem_{args.problem_type}/{args.sim_id}/")
+        elif platform.system() == 'Windows':
+            scratchdata_dir = os.path.join(os.getcwd(), f"scratchdata/problem_{args.problem_type}/{args.sim_id}/")  
+        else:
+            raise EnvironmentError("Unsupported operating system. Please use Linux or Windows.")
+    else:    
+        scratchdata_dir = os.path.join(args.dump_folder, f"scratchdata/problem_{args.problem_type}/{args.sim_id}/")
+    
     if not os.path.exists(scratchdata_dir):
         os.makedirs(scratchdata_dir)
+    
     # Move the main directory to the scratchdata directory
-    os.chdir(f"/scratchdata/olarterodriguezi/problem_{args.problem_type}/{args.sim_id}")  # Change to the directory where the results will be saved
+    os.chdir(scratchdata_dir)  # Change to the directory where the results will be saved
 
     # Update runnerOptions with parsed arguments
     runnerOptions.update({
-        "open_radioss_main_path": args.orss_main_path,
+        "main_path": args.main_path,
         "np": args.np,
         "nt": args.nt,
         "h_level": args.h_level,
@@ -119,7 +135,7 @@ if __name__ == '__main__':
     objective_function = args.objective_function
 
     # Get the problem instance
-    f = sob.get_problem(problem_type, dim, runnerOptions, objective_function, sequential_id_numbering=False)
+    f = sob.get_problem(problem_type, dim, objective_function, runner_options=runnerOptions)
 
     start_time = time.perf_counter()
     obj_value = f(vector,sim_id)

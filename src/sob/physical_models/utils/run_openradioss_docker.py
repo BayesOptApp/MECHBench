@@ -73,8 +73,12 @@ class RunOpenCourantDocker:
             self.jobname, self.run_id = source.stem, 0
             # Preserve the native runner's converted-deck convention.
             source = source.with_name(self.jobname + "_0000.rad")
+        elif self.extension == ".k":
+            self.jobname, self.run_id = source.stem, 0
+            # Preserve the native runner's converted-deck convention.
+            source = source.with_name(self.jobname + ".k")
         else:
-            raise ValueError("Input must be a .rad or .inp deck")
+            raise ValueError("Input must be a .rad, .k or .inp deck")
         self._file = str(source.as_posix())
         self.working_dir = source.parent
         self.running_directory = str(self.working_dir.as_posix())
