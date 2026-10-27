@@ -1,0 +1,4 @@
+[submodule "ML_Benchmarks/IOH-Profiler-HDBO-Comparison"]
+	path = ML_Benchmarks/IOH-Profiler-HDBO-Comparison
+	url = https://github.com/BayesOptApp/IOH-Profiler-HDBO-Comparison.git
+	branch = main
