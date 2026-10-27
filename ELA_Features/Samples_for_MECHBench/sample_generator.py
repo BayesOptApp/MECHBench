@@ -76,10 +76,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dim", type=int, default=2, help="Number of dimensions")
     parser.add_argument("--multiplier", type=int, default=50,
                         help="Samples per dimension; total = dim * multiplier")
-    parser.add_argument("--seed", type=int, default=43)
-    parser.add_argument("--lower_bound", type=float, default=-5.0)
-    parser.add_argument("--upper_bound", type=float, default=5.0)
-    parser.add_argument("--sample_type", choices=["lhs", "random", "sobol"], default="lhs")
+    parser.add_argument("--seed", type=int, default=43, help="Random seed for reproducibility")
+    parser.add_argument("--lower_bound", type=float, default=-5.0, help="Lower bound for each dimension")
+    parser.add_argument("--upper_bound", type=float, default=5.0, help="Upper bound for each dimension")
+    parser.add_argument("--sample_type", choices=["lhs", "random", "sobol"], default="lhs", help="Type of sampling")
     parser.add_argument("--optimization", choices=["random-cd", "lloyd", "none"],
                         default="random-cd", help="LHS optimization method")
     parser.add_argument("--output", default=None, help="Optional output CSV path")
