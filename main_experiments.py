@@ -105,7 +105,9 @@ if __name__ == '__main__':
     args = parse_args()
 
     # Generate the scratchdata directory if it does not exist
-    scratchdata_dir = f"/scratchdata/olarterodriguezi/problem_{args.problem_type}/{args.optimizer}/{args.dimension}/{args.run_id}"
+    scratchdata_dir = os.environ['TMPDIR'] # TMPDIR is automatically set to /scratchdata/${SLURM_JOB_USER}/${SLURM_JOB_ID}
+    scratchdata_dir = os.path.join(scratchdata_dir,f"problem_{args.problem_type}/{args.optimizer}/{args.dimension}/{args.run_id}")
+    
     if not os.path.exists(scratchdata_dir):
         os.makedirs(scratchdata_dir)
     # Move the main directory to the scratchdata directory
