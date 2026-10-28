@@ -52,6 +52,32 @@ including BoTorch, GPyTorch, PyTorch, HEBO, and CMA-ES. The `ela` group installs
 If MECHBench is already installed in the active environment, rerunning the
 appropriate command installs the selected optional dependencies as well.
 
+## Reproduce MECHBench optimization and ELA experiments
+
+For the structural-mechanics benchmarks (which use OpenRadioss), use these
+MECHBench workflows rather than the BBOB scripts below:
+
+- **ELA feature computation:** follow the
+  [MECHBench ELA guide](ELA_Features/Sampling_ELA_for_MECHBench/README.md).
+  It explains how to generate or select a sample database, evaluate its points
+  with MECHBench, and compute ELA features from the resulting evaluations. The
+  computation entry point is
+  [`ela_computation_raw.py`](ELA_Features/Sampling_ELA_for_MECHBench/ela_computation_raw.py).
+- **Optimization experiments:** run
+  [`main_experiments.py`](main_experiments.py) for an individual optimization
+  run. For cluster-based and repeated runs, see the
+  [SLURM experiment guide](SLURM_scripts/README.md) and its
+  [optimization launcher](SLURM_scripts/opt_experiment_launcher.slurm) and
+  [BoTorch launcher](SLURM_scripts/opt_experiment_launcher_botorch.slurm).
+
+Install `.[ela]` for ELA feature computation and `.[hdbo]` for the optimizer
+dependencies, or install both with `python -m pip install -e ".[hdbo,ela]"`.
+MECHBench optimization runs also require a working OpenRadioss installation;
+configure its path and other cluster-specific settings as described in the
+SLURM guide. The ELA workflow consumes the MECHBench sample/evaluation outputs,
+while the BBOB workflows in the following section use IOH test functions
+directly and do not run the structural models.
+
 ## Reproduce the BBOB experiments
 
 The repository includes two BBOB workflows that can be run from the repository
