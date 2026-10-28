@@ -32,14 +32,14 @@ from pflacco.classical_ela_features import (
 )
 
 # Edit these defaults here or override them on the command line.
-#FUNCTION_IDS = list(range(1, 25))
-FUNCTION_IDS = list(range(1, 2))
-#INSTANCE_IDS = list(range(1, 6))
-INSTANCE_IDS = list(range(1, 2))
-#DIMENSIONS = [5, 10, 20]
-DIMENSIONS = [5]
-#SEEDS = list(range(1, 11))  # Random seeds for reproducibility.
-SEEDS = list(range(1, 3))  # Random seeds for reproducibility.
+FUNCTION_IDS = list(range(1, 25))
+#FUNCTION_IDS = list(range(1, 2))
+INSTANCE_IDS = list(range(1, 6))
+#INSTANCE_IDS = list(range(1, 2))
+DIMENSIONS = [5, 10, 20]
+#DIMENSIONS = [5]
+SEEDS = list(range(1, 11))  # Random seeds for reproducibility.
+#SEEDS = list(range(1, 3))  # Random seeds for reproducibility.
 SAMPLE_MULTIPLIER = 250  # Number of sample points = multiplier * dimension.
 OUTPUT_CSV = Path(__file__).resolve().parent / 'output_ela' / 'ela_features_bbob.csv'
 
@@ -90,6 +90,10 @@ def compute_ela_features(X: np.ndarray, y: np.ndarray, seed: int = 43,
         raise ValueError('X must be an (n, d) array and y must have length n.')
     if not np.isfinite(X).all() or not np.isfinite(y).all():
         raise ValueError('X and y must contain only finite values.')
+    
+    # This is for normalization of the objective values, not the input coordinates.
+    # This follows the recommendations from previous analysis on ELA features
+    # Thus this allows the feature values to be comparable across different functions and instances.
     if normalize:
         y = MinMaxScaler().fit_transform(y.reshape(-1, 1)).ravel()
     groups = (
@@ -154,15 +158,15 @@ def main() -> None:
                 for iid in args.iids:
                     y = evaluate_bbob(X, fid, iid)
                     for mode in modes:
-                        metadata = dict(fid=fid, iid=iid, dim=dim,
+                        metadata = dict(fid=fid, iid=iid, dim=dim, rep=repetition + 1,
                                         seed_number=seed, n_samples=n_samples,
                                         sampling=args.sampling, normalization=mode,
-                                        rep=repetition + 1)
+                                        )
                         try:
                             features = compute_ela_features(X, y, seed, mode == 'minmax')
                         except Exception as exc:
                             raise RuntimeError(f'ELA computation failed for {metadata}') from exc
-                        rows.append({**metadata, **features})
+                        rows.append({**features, **metadata})
                     print(f'Computed fid={fid}, iid={iid}, dim={dim}, seed={seed}, n={n_samples}',
                           flush=True)
             pd.DataFrame(rows).to_csv(args.output, index=False)
