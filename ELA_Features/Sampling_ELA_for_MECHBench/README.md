@@ -1,24 +1,24 @@
 # Sample databases for MECHBench ELA
 
-This folder contains [sample_generator.py](sample_generator.py) and pre-generated
-sample databases for evaluating MECHBench at a set of design points. Each CSV
-contains `dimension * multiplier` points in the MECHBench search range
-`[-5, 5]`, along with an `id` column. The checked-in databases use multiplier
-250 and seeds 43 through 53.
+This folder contains [sample_generator.py](sample_generator.py), the raw ELA
+computation script, and pre-generated sample databases for evaluating
+MECHBench at a set of design points. Each CSV contains `dimension * multiplier`
+points in the MECHBench search range `[-5, 5]`, along with a 1-based `id`
+column. The checked-in databases use multiplier 250 and seeds 43 through 53.
 
 ## Generate a sample database
 
-The generator uses NumPy, pandas, and SciPy (specifically SciPy's QMC samplers).
-Install the project's core dependencies, then run from the repository root:
+The generator uses NumPy, pandas, and SciPy (specifically SciPy's QMC
+samplers). From the repository root, run:
 
 ```bash
-python ELA_Features/Samples_for_MECHBench/sample_generator.py \
+python ELA_Features/Sampling_ELA_for_MECHBench/sample_generator.py \
   --dim 20 \
   --multiplier 250 \
   --seed 43 \
   --sample_type lhs \
   --optimization random-cd \
-  --output ELA_Features/Samples_for_MECHBench/250D/sample_database_d_20_mult_250_seed_43.csv
+  --output ELA_Features/Sampling_ELA_for_MECHBench/250D/sample_database_d_20_mult_250_seed_43.csv
 ```
 
 The generator supports `lhs`, `random`, and `sobol` sample types, configurable
@@ -51,10 +51,11 @@ BIAS_NUM=0
 PICK_LAST=1
 ```
 
-Set `DB` to the corresponding file in this directory. For example:
+Set `DB` to the corresponding file in this directory (the checked-in files are
+under `250D/`). For example:
 
 ```bash
-DB="${PROJECT_DIR}/ELA_Features/Samples_for_MECHBench/250D/sample_database_d_${DIMENSION}_mult_${MULTIPLIER}_seed_${RANDOM_SEED}.csv"
+DB="${PROJECT_DIR}/ELA_Features/Sampling_ELA_for_MECHBench/250D/sample_database_d_${DIMENSION}_mult_${MULTIPLIER}_seed_${RANDOM_SEED}.csv"
 ```
 
 The template's default `DB` points to `${PROJECT_DIR}/samples/`, not this
@@ -70,10 +71,69 @@ SLURM CPU resources. The launcher writes individual results by sample ID and
 uses `flock` when appending summary files. Use distinct sample IDs when
 submitting concurrent jobs to avoid overwriting individual result files.
 
+## Compute ELA from MECHBench evaluations
+
+[`ela_computation_raw.py`](ela_computation_raw.py) computes seven `pflacco`
+feature groups (ELA level, meta, distribution, information content, PCA,
+dispersion, and nearest-better clustering). By default, it writes both raw and
+min-max-normalized objective feature rows; the design coordinates are not
+scaled.
+
+### How samples and evaluations link
+
+The sample CSV's `id` is the 1-based point/simulation ID. The SLURM array
+launcher uses that row number as `sim_id` and writes the objective from each
+MECHBench evaluation to:
+
+```text
+results/individual_points/problem_<PROBLEM_TYPE>/
+  summary_dim_<DIMENSION>_seed_<RANDOM_SEED>.txt
+```
+
+Each summary row contains `sim_id<TAB>objective_value`. The ELA script joins
+the sample points and their evaluated objective values using that ID, so row
+ordering in the summary does not matter. It infers the problem ID from the
+`problem_<id>` directory and the dimension/seed from the summary filename.
+Use the same sample design, problem type, dimension, and seed that were used
+for the evaluations. If a batch is incomplete, only matching IDs are used and
+the script reports the unmatched points/evaluations.
+
+### Install and run
+
+Install the ELA optional dependencies from the repository root:
+
+```bash
+python -m pip install -e ".[ela]"
+```
+
+After running the sequential SLURM array, compute features for one problem,
+dimension, and seed:
+
+```bash
+python ELA_Features/Sampling_ELA_for_MECHBench/ela_computation_raw.py \
+  --samples ELA_Features/Sampling_ELA_for_MECHBench/250D/sample_database_d_20_mult_250_seed_43.csv \
+  --evaluations results/individual_points/problem_3/summary_dim_20_seed_43.txt \
+  --output ELA_Features/Sampling_ELA_for_MECHBench/output_ela/features_problem_3_dim_20_seed_43.csv
+```
+
+You can also pass the containing problem directory to `--evaluations`; the
+script discovers its `summary_dim_*_seed_*.txt` files and processes each one.
+Use `--normalization raw` or `--normalization minmax` to compute only one
+objective scale. `--seed` overrides the seed used by the information-content
+features; otherwise it is read from the summary filename, then the sample
+filename, with 43 as the fallback.
+
+For a quick small run, evaluate a small subset of points first (for example
+array tasks 1 through 10), then run the same command against that summary file.
+The output CSV includes the problem ID when available, dimension, seed,
+matched sample count, input paths, normalization mode, and all computed
+features. The default sample input is the checked-in 20-dimensional seed-43
+database, and the default evaluation directory is `results/individual_points`.
+
 ## Available sample files
 
-All listed databases are under [`250D/`](250D/); the `250D` directory denotes
-the multiplier, while the dimension and seed are in each filename.
+All listed databases are under [`250D/`](250D/); `250D` denotes the sample
+multiplier, while the dimension and seed are in each filename.
 
 ### Dimension 5
 

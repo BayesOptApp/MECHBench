@@ -2,19 +2,16 @@
 
 [ela_computation_bbob.py](ela_computation_bbob.py) generates reproducible
 sample designs in the BBOB domain, evaluates them with IOH, computes ELA
-features with `pflacco`, and writes the feature rows to a CSV. Its default
-configuration is intended to reproduce the feature-generation setup used for
-the paper: the same seven ELA feature groups (including PCA), computed for raw
-and min-max-normalized objective values. The input coordinates are not
-normalized.
+features with `pflacco`, and writes the feature rows to a CSV. It computes the
+same seven ELA feature groups (including PCA) for raw and
+min-max-normalized objective values. The input coordinates are not normalized.
 
 The script uses SciPy for sampling rather than `pflacco`; ELA feature
 calculation itself requires `pflacco`.
 
 ## Install dependencies
 
-From the repository root, install MECHBench with the ELA extra. This will install `scikit-learn` to use the `min-max` scaler from
-such library.
+From the repository root, install MECHBench with the ELA extra:
 
 ```bash
 python -m pip install -e ".[ela]"
@@ -38,14 +35,14 @@ The defaults are:
 | BBOB function IDs (`--fids`) | 1–24 |
 | BBOB instance IDs (`--iids`) | 1–5 |
 | Dimensions (`--dimensions`) | 5, 10, 20 |
-| Sampling seeds (`--seeds`) | 43 |
+| Sampling seeds (`--seeds`) | 1–10 |
 | Sampling method (`--sampling`) | Latin hypercube (`lhs`) |
 | Samples per dimension (`--multiplier`) | 250 |
 | Objective normalization (`--normalization`) | Both `raw` and `minmax` |
 | Output | `ELA_Features/Sampling_ELA_with_BBOB/output_ela/ela_features_bbob.csv` |
 
-With these settings, the script produces 720 feature rows: 24 functions × 5
-instances × 3 dimensions × 1 sampling seed × 2 normalization modes. For each
+With these settings, the script produces 7,200 feature rows: 24 functions × 5
+instances × 3 dimensions × 10 sampling seeds × 2 normalization modes. For each
 dimension and sampling seed, it generates a design of `multiplier * dimension`
 points in `[-5, 5]^dimension`. That same design is evaluated on each selected
 function and instance for the dimension/seed combination. The sampling seed
