@@ -9,10 +9,7 @@ description = "A package to run MECHBench benchmarks for black-box optimization 
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
-authors = [
-  { name = "Elena Raponi", email = "e.raponi@liacs.leidenuniv.nl" },
-  { name = "Ivan Olarte Rodriguez", email = "i.olarte.rodriguez@liacs.leidenuniv.nl" }
-]
+
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent"

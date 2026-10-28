@@ -378,9 +378,4 @@ When working with force-related metrics (e.g., `mean_impact_force`, `peak_impact
 This behavior is inherent to the OpenRadioss binaries and not specific to MECHBench.
 
 ## Contact constributors
-- Ivan Olarte Rodriguez (ivan.olarte.rodriguez@liacs.leidenuniv.nl) 
-- Maria Laura Santoni (maria-laura.santoni@lip6.fr) 
-- Elena Raponi (e.raponi@liacs.leidenuniv.nl)
-
-## Other contributors
-- Feifan Li (feifan.li@tum.de)
+- Will be revealed timely

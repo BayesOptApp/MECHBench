@@ -19,7 +19,7 @@
 #
 #
 # ====================================================================================
-# This is a modification performed by Ivan Olarte-Rodriguez 
+# This is a modification performed by the authors of this repository.
 # 24/04/2025 <-> 14:05
 # Since the idea is top operate OpenRadioss from afar, then the OpenRadioss path is 
 # altered such that the user should just point to the main path of the OpenRadioss

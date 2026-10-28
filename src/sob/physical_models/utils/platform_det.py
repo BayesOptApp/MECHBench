@@ -4,7 +4,7 @@ THE PATH TO OPENRADIOSS, AS WELL AS OTHER RUNNER OPTIONS.
 """
 
 # Module Properties
-__author__ = "Ivan Olarte Rodriguez"
+__author__ = "Anonymous"
 
 
 import platform

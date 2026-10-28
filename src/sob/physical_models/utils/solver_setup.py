@@ -1,7 +1,7 @@
 ### THIS IS A MODULE TO SET-UP THE CASE FROM THE START
 
 # Module Properties
-__author__ = "Ivan Olarte Rodriguez"
+__author__ = "Anonymous"
 
 
 # Module Imports
