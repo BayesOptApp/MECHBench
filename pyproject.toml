@@ -26,8 +26,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/BayesOptApp/MECHBench"
-Issues = "https://github.com/BayesOptApp/MECHBench/issues"
+Homepage = "https://anonymous.4open.science/r/MECHBench-TELO_submission"
 
 [project.optional-dependencies]
 hdbo = [
