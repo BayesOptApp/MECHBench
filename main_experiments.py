@@ -95,21 +95,6 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-# def main():
-
-#     ### NOTE: This is an addition to the original code to save the results in a specific folder
-
-#     #os.chdir("/scratchdata/olarterodriguezi/") # Change to the directory where the results will be saved
-#     sim_id = 257 # Attribute to define the simulation id and connected results folder name
-#     vector = [2.5,-1] # Vector where the objective function is evaluated, it has as many components as the second input argument in get_problem below
-#     f = sob.get_problem(3,2,runnerOptions,"intrusion",sequential_id_numbering=False)
-#     # Start timing
-#     start_time = time.perf_counter()
-#     obj_value = f(vector,sim_id)
-#     end_time = time.perf_counter()
-#     print(obj_value)
-#     print(f"Time taken: {end_time - start_time} seconds")
-
 if __name__ == '__main__':
     args = parse_args()
 
