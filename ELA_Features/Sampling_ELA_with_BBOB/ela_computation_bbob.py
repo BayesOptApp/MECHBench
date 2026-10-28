@@ -32,10 +32,14 @@ from pflacco.classical_ela_features import (
 )
 
 # Edit these defaults here or override them on the command line.
-FUNCTION_IDS = list(range(1, 25))
-INSTANCE_IDS = list(range(1, 6))
-DIMENSIONS = [5, 10, 20]
-SEEDS = [43]
+#FUNCTION_IDS = list(range(1, 25))
+FUNCTION_IDS = list(range(1, 2))
+#INSTANCE_IDS = list(range(1, 6))
+INSTANCE_IDS = list(range(1, 2))
+#DIMENSIONS = [5, 10, 20]
+DIMENSIONS = [5]
+#SEEDS = list(range(1, 11))  # Random seeds for reproducibility.
+SEEDS = list(range(1, 3))  # Random seeds for reproducibility.
 SAMPLE_MULTIPLIER = 250  # Number of sample points = multiplier * dimension.
 OUTPUT_CSV = Path(__file__).resolve().parent / 'output_ela' / 'ela_features_bbob.csv'
 
@@ -144,7 +148,7 @@ def main() -> None:
     # Checkpoint after each (dimension, seed) to retain completed batches.
     for dim in args.dimensions:
         n_samples = args.n_samples if args.n_samples is not None else args.multiplier * dim
-        for seed in args.seeds:
+        for repetition, seed in enumerate(args.seeds):
             X = generate_sample(dim, n_samples, seed, args.sampling)
             for fid in args.fids:
                 for iid in args.iids:
@@ -152,7 +156,8 @@ def main() -> None:
                     for mode in modes:
                         metadata = dict(fid=fid, iid=iid, dim=dim,
                                         seed_number=seed, n_samples=n_samples,
-                                        sampling=args.sampling, normalization=mode)
+                                        sampling=args.sampling, normalization=mode,
+                                        rep=repetition + 1)
                         try:
                             features = compute_ela_features(X, y, seed, mode == 'minmax')
                         except Exception as exc:

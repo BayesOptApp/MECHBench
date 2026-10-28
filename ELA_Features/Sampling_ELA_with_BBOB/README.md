@@ -92,14 +92,14 @@ normalization modes) using 50 sample points per function evaluation.
 
 For the `minmax` mode, the script fits a separate scaler to the objective
 values from each function/instance/design evaluation. For objective value
-\(y_i\), the transformation is:
+$y_i$, the transformation is:
 
-\[
+$$
 y_i^{\mathrm{scaled}} =
 \frac{y_i - y_{\min}}{y_{\max} - y_{\min}},
 \qquad
 y_{\min} = \min_j y_j,\quad y_{\max} = \max_j y_j.
-\]
+$$
 
 Thus non-constant objective values map to the interval \([0, 1]\). The `raw`
 mode uses the original objective values. When all values are equal,
