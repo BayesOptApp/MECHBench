@@ -3,6 +3,51 @@
 This guide explains how to install MECHBench and the optional dependency groups
 declared in `pyproject.toml`.
 
+## Download the external benchmark source
+
+This implementation uses the public third-party repository
+[IOH-Profiler-HDBO-Comparison](https://github.com/BayesOptApp/IOH-Profiler-HDBO-Comparison)
+at `ML_Benchmarks/IOH_Profiler_HDBO_Comparison`. Its source code is separate
+from the Python dependencies installed with `pip` below. Git is required for
+the download commands in this section.
+
+### If you downloaded the anonymous ZIP
+
+Extract the archive and open a terminal in the extracted MECHBench repository
+root. The anonymous archive does not include Git submodule contents, so the
+benchmark folder may be empty. Download the public source into that location:
+
+```bash
+git clone --branch main --recurse-submodules https://github.com/BayesOptApp/IOH-Profiler-HDBO-Comparison.git ML_Benchmarks/IOH_Profiler_HDBO_Comparison
+```
+
+Run this once, only when the destination folder is absent or empty. If it
+already contains the benchmark source, skip this clone step. Do not use
+`git submodule update` from the extracted ZIP: the archive lacks the parent
+repository's Git metadata needed by that command.
+
+### If you have a normal Git clone of MECHBench
+
+From the MECHBench repository root, initialize the recorded submodule instead:
+
+```bash
+git submodule update --init --recursive
+```
+
+This checks out the submodule commit recorded in MECHBench, rather than
+necessarily the latest upstream `main`.
+
+### Version used for reproduction
+
+The anonymous-ZIP instructions above download the upstream `main` branch as
+it exists at download time. That branch can change. For exact reproduction,
+the submission must also specify the full benchmark commit hash used in the
+experiments. Once that hash is supplied, check out that commit in the
+downloaded benchmark folder before running the experiments.
+
+After downloading the source, continue with the environment and dependency
+installation below. Cloning the source does not install its Python dependencies.
+
 ## Install MECHBench
 
 From the repository root, create and activate a Python environment, then install
