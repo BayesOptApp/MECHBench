@@ -208,7 +208,9 @@ If `main_path` is not provided, MECHBench will:
 2. If not found, automatically download the appropriate binaries
 
 ##### Using Docker or Podman
-Instead of a local installation, set `main_path` to `"docker"` or `"podman"` to run the solver in a container (the container engine must be installed and running):
+
+To run the Linux distribution of OpenCourant in a container instead of installing the solver locally, set `main_path` to `"docker"` or `"podman"`. The selected container engine must be installed and running.
+
 ```python
 runnerOptions = {
     "main_path": "docker",  # or "podman"
@@ -216,6 +218,8 @@ runnerOptions = {
     "nt": 1,
 }
 ```
+
+This option also allows users to run MECHBench on macOS, provided that the container engine and solver image support the host architecture. 
 
 ##### Advanced: Custom OpenRadioss Path
 For full control over the solver (e.g., custom builds or HPC environments):
